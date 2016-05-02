@@ -63,8 +63,10 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       authorizationParser.stringify(StripeAuthorization(charge.getId))
     } match {
       case Success(authorizationKey) => Success(authorizationKey)
-      case Failure(e: StripeException) => Failure(translateStripeException(e))
-      case Failure(e) => Failure(new PaymentErrorException(e.getMessage, e))
+      case Failure(e: StripeException) => e.printStackTrace() // TODO: debugging, remove this
+        Failure(translateStripeException(e))
+      case Failure(e) => e.printStackTrace() // TODO: debugging, remove this
+        Failure(new PaymentErrorException(e.getMessage, e))
     }
   }
 
