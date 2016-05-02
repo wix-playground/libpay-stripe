@@ -49,9 +49,6 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   }
 
   override def authorize(merchantKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
-    // TODO: debugging, remove this
-    System.out.println(s"Stripe version = ${com.stripe.Stripe.VERSION}")
-
     Try {
       val merchant = merchantParser.parse(merchantKey)
 
@@ -66,10 +63,8 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       authorizationParser.stringify(StripeAuthorization(charge.getId))
     } match {
       case Success(authorizationKey) => Success(authorizationKey)
-      case Failure(e: StripeException) => e.printStackTrace() // TODO: debugging, remove this
-        Failure(translateStripeException(e))
-      case Failure(e) => e.printStackTrace() // TODO: debugging, remove this
-        Failure(new PaymentErrorException(e.getMessage, e))
+      case Failure(e: StripeException) =>  Failure(translateStripeException(e))
+      case Failure(e) => Failure(new PaymentErrorException(e.getMessage, e))
     }
   }
 
