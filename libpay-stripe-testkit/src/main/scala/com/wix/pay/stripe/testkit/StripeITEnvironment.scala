@@ -8,7 +8,6 @@ object StripeITEnvironment {
   def setUpStripeDriver() = {
     // Ugly, but seems to be the only way to do this
     Stripe.overrideApiBase(s"http://localhost:$StripePort")
-    Stripe.setVerifySSL(false)
 
     stripeDriver.startStripeProbe()
   }

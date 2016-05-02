@@ -304,7 +304,6 @@ class HappyPathStripeDriver(port: Int) extends StripeDriverSupport
   with ChargeStripeDriver with AccountStripeDriver with CreateCardTokenDriver {
   // Ugly, but seems to be the only way to do this
   Stripe.overrideApiBase(s"http://localhost:$port")
-  Stripe.setVerifySSL(false)
 
   val stripeProbe = new EmbeddedHttpProbe(port, EmbeddedHttpProbe.NotFoundHandler)
   aCreateChargeRequest.returns(chargeId = "someChargeId")

@@ -68,7 +68,7 @@
         <io.spray.client.version>${io.spray.version}</io.spray.client.version>
         <com.typesafe.akka.version>2.3.6</com.typesafe.akka.version>
         <com.typesafe.akka.actor.version>${com.typesafe.akka.version}</com.typesafe.akka.actor.version>
-        <com.stripe.version>1.28.0</com.stripe.version>
+        <com.stripe.version>2.4.0</com.stripe.version>
 
         <java.target.version>1.7</java.target.version>
     </properties>
