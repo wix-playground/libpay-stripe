@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.wix.pay</groupId>
-    <artifactId>libpay-stripe</artifactId>
+    <artifactId>libpay-stripe-common</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>Stripe payment gateway</name>
-    <description>Stripe payment gateway</description>
+    <name>libpay module for Stripe payment gateway common</name>
+    <description>libpay module for Stripe payment gateway common</description>
 
     <developers>
         <developer>
@@ -47,27 +47,11 @@
             <version>${com.wix.pay.libpay.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.wix.pay</groupId>
-            <artifactId>libpay-stripe-common</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>org.json4s</groupId>
             <artifactId>json4s-native_${scala.dependencies.version}</artifactId>
             <version>${org.json4js.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.stripe</groupId>
-            <artifactId>stripe-java</artifactId>
-            <version>${com.stripe.version}</version>
-        </dependency>
 
         <!-- Test Dependencies -->
-        <dependency>
-            <groupId>com.wix.pay</groupId>
-            <artifactId>libpay-stripe-testkit</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>

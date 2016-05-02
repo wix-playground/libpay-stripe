@@ -19,6 +19,7 @@
     <modules>
         <module>libpay-stripe-parent</module>
         <module>libpay-stripe</module>
+        <module>libpay-stripe-common</module>
         <module>libpay-stripe-testkit</module>
     </modules>
 	

@@ -1,7 +1,6 @@
 package com.wix.pay.stripe
 
 
-import java.math.{BigDecimal => JBigDecimal}
 import java.util
 
 import com.stripe.exception.{CardException, StripeException}
@@ -9,6 +8,7 @@ import com.stripe.model.{Charge, Token}
 import com.stripe.net.RequestOptions
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.model.{CurrencyAmount, Customer, Deal}
+import com.wix.pay.stripe.model.Fields
 import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, PaymentRejectedException}
 
 import scala.util.{Failure, Success, Try}
@@ -22,16 +22,16 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     val token = retrieveCardToken(apiKey, creditCard)
 
     val params = new util.LinkedHashMap[String, Object]()
-    params.put("amount", toStripeAmount(currencyAmount.amount))
-    params.put("currency", currencyAmount.currency)
-    params.put("source", token.getId)
-    params.put("capture", autoCapture.asInstanceOf[java.lang.Boolean] )
+    params.put(Fields.amount, StripeHelper.toStripeAmount(currencyAmount.amount))
+    params.put(Fields.currency, currencyAmount.currency)
+    params.put(Fields.source, token.getId)
+    params.put(Fields.capture, autoCapture.asInstanceOf[java.lang.Boolean] )
 
     val additionalInfoMap = additionalInfoMapper.createMap(creditCard, customer, deal)
 
-    params.put("metadata",additionalInfoMap)
+    params.put(Fields.metadata, additionalInfoMap)
 
-    Charge.create(params, setApiKey(apiKey))
+    Charge.create(params, requestOptionsFor(apiKey))
   }
 
   private def retrieveCardToken(apiKey: String, creditCard: CreditCard): Token = {
@@ -40,12 +40,13 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     // Stripe prefers developers use Stripe.Js which is guaranteed to be PCI compliant...
     // see 'https://stripe.com/docs/connect/payments-fees' Stripe.Js box
     val params = new util.LinkedHashMap[String, Object]()
-    params.put("card", creditCardMapper.cardToParams(creditCard))
-    Token.create(params, setApiKey(apiKey))
+    params.put(Fields.card, creditCardMapper.cardToParams(creditCard))
+    Token.create(params, requestOptionsFor(apiKey))
   }
 
-  private def setApiKey(apiKey: String) =
+  private def requestOptionsFor(apiKey: String): RequestOptions = {
     RequestOptions.builder.setApiKey(apiKey).build
+  }
 
   override def authorize(merchantKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
     Try {
@@ -67,20 +68,16 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     }
   }
 
-  private def toStripeAmount(amount: Double): Integer = {
-    JBigDecimal.valueOf(amount).movePointRight(2).intValueExact()
-  }
-
   override def capture(merchantKey: String, authorizationKey: String, amount: Double): Try[String] = {
     Try {
       val merchant = merchantParser.parse(merchantKey)
       val authorization = authorizationParser.parse(authorizationKey)
 
-      val charge = Charge.retrieve(authorization.chargeId, RequestOptions.builder.setApiKey(merchant.apiKey).build)
+      val charge = Charge.retrieve(authorization.chargeId, requestOptionsFor(merchant.apiKey))
 
       val params = new util.LinkedHashMap[String, Object]()
-      params.put("amount", toStripeAmount(amount))
-      val captured = charge.capture(params, RequestOptions.builder.setApiKey(merchant.apiKey).build)
+      params.put(Fields.amount, StripeHelper.toStripeAmount(amount))
+      val captured = charge.capture(params, requestOptionsFor(merchant.apiKey))
       captured.getId
     } match {
       case Success(chargeId) => Success(chargeId)
@@ -117,7 +114,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       // Stripe doesn't support voiding an authorization - you can either issue a full refund or just wait 7 days.
       // According to Stripe support, the two are equivalent (after 7 days) from both the payer's and payee's perspectives.
       // So for now, we just wait it out.
-      val charge = Charge.retrieve(authorization.chargeId, RequestOptions.builder.setApiKey(merchant.apiKey).build)
+      val charge = Charge.retrieve(authorization.chargeId, requestOptionsFor(merchant.apiKey))
       charge.getId
     }
   }
