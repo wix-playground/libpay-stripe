@@ -49,6 +49,9 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   }
 
   override def authorize(merchantKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
+    // TODO: debugging, remove this
+    System.out.println(s"Stripe version = ${com.stripe.Stripe.VERSION}")
+
     Try {
       val merchant = merchantParser.parse(merchantKey)
 
