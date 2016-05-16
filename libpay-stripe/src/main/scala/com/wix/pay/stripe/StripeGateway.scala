@@ -127,6 +127,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   }
 }
 
+/** @see <a href="https://support.stripe.com/questions/what-is-the-minimum-amount-i-can-charge-with-stripe">What is the minimum amount I can charge with Stripe?</a> */
 private object AmountBelowMinimum {
   def unapply(e: InvalidRequestException): Option[InvalidRequestException] = {
     // Reliance on the error message is crude, but seems necessary.
