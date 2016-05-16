@@ -29,6 +29,21 @@ trait StripeDriverSupport {
     /** Verifies that the specified HTTP Entity matches the stubbed request. */
     def isStubbedRequestEntity(entity: HttpEntity): Boolean
 
+    def failOnAmountBelowMinimum(): Unit = {
+      stripeProbe.handlers += {
+        case HttpRequest(
+        httpMethod,
+        Uri.Path(`resource`),
+        _,
+        entity,
+        _) if isStubbedRequestEntity(entity) => {
+          HttpResponse(
+            status = StatusCodes.BadRequest,
+            entity = HttpEntity(ContentTypes.`application/json`,
+            "{\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"message\": \"Amount must be at least 30 pence\",\n    \"param\": \"amount\"\n  }\n}"))}
+      }
+    }
+
     def errors(statusCode: StatusCode, error: StripeError) {
       stripeProbe.handlers += {
         case HttpRequest(

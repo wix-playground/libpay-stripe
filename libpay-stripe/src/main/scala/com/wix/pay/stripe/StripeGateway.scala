@@ -1,7 +1,7 @@
 package com.wix.pay.stripe
 
 
-import com.stripe.exception.{CardException, StripeException}
+import com.stripe.exception.{CardException, InvalidRequestException, StripeException}
 import com.stripe.model.{Charge, Token}
 import com.stripe.net.RequestOptions
 import com.wix.pay.creditcard.CreditCard
@@ -120,7 +120,21 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   private def translateStripeException(e: StripeException): PaymentException = {
     e match {
       case e: CardException => new PaymentRejectedException(e.getMessage, e)
+      case AmountBelowMinimum(amountBelowMinimumException) =>
+        new PaymentRejectedException(amountBelowMinimumException.getMessage, amountBelowMinimumException)
       case _ => new PaymentErrorException(e.getMessage, e)
+    }
+  }
+}
+
+private object AmountBelowMinimum {
+  def unapply(e: InvalidRequestException): Option[InvalidRequestException] = {
+    // Reliance on the error message is crude, but seems necessary.
+    // The full error message goes something like "Amount must be at least 30 pence"
+    if ((e.getParam == Fields.amount) && e.getMessage.startsWith("Amount must be at least ")) {
+      Some(e)
+    } else {
+      None
     }
   }
 }

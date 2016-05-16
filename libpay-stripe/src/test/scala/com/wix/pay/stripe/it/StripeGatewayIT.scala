@@ -4,7 +4,7 @@ import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, YearMonth}
 import com.wix.pay.model.CurrencyAmount
 import com.wix.pay.stripe._
 import com.wix.pay.stripe.testkit.{StripeError, StripeITEnvironment}
-import com.wix.pay.{PaymentErrorException, PaymentGateway, PaymentRejectedException}
+import com.wix.pay.{PaymentErrorException, PaymentRejectedException}
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
 import spray.http.StatusCodes
@@ -12,11 +12,11 @@ import spray.http.StatusCodes
 
 class StripeGatewayIT extends SpecWithJUnit {
 
-  val stripeDriver = StripeITEnvironment.stripeDriver
+  val driver = StripeITEnvironment.stripeDriver
 
   val authorizationParser = new JsonStripeAuthorizationParser()
   val merchantParser = new JsonStripeMerchantParser()
-  val stripe: PaymentGateway = new StripeGateway(
+  val stripe = new StripeGateway(
     merchantParser = merchantParser,
     authorizationParser = authorizationParser)
 
@@ -30,10 +30,8 @@ class StripeGatewayIT extends SpecWithJUnit {
 
 
   trait Ctx extends Scope {
-    stripeDriver.resetProbe()
-  }
+    driver.resetProbe()
 
-  "authorize request via Stripe gateway" should {
     val someMerchant = new StripeMerchant("someApiKey")
     val someMerchantKey = merchantParser.stringify(someMerchant)
     val someCurrencyAmount = CurrencyAmount("USD", 33.3)
@@ -45,16 +43,33 @@ class StripeGatewayIT extends SpecWithJUnit {
         holderId = Some("some holder id"),
         holderName = Some("some holder name"))))
 
+    val someCardToken = "cardToken"
+  }
+
+  "sale" should {
+    "gracefully fail on amount below minimum" in new Ctx {
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest failOnAmountBelowMinimum()
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        currencyAmount = someCurrencyAmount
+      ) must beAFailedTry(
+        check = beAnInstanceOf[PaymentRejectedException]
+      )
+    }
+  }
+
+  "authorize" should {
     "gracefully fail on invalid merchant key" in new Ctx {
-      stripeDriver.aCreateChargeRequest errors(
+      driver.aCreateChargeRequest errors(
         StatusCodes.Unauthorized, StripeError("invalid_request_error", "Invalid API Key provided: " + someMerchant.apiKey))
 
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount,
-        customer = None,
-        deal = None
+        currencyAmount = someCurrencyAmount
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentErrorException]
       )
@@ -62,27 +77,23 @@ class StripeGatewayIT extends SpecWithJUnit {
 
     "successfully yield an authorization key on valid request" in new Ctx {
       val someChargeId = "someChargeID"
-      val cardToken = "cardToken"
       val authorizationKey = authorizationParser.stringify(StripeAuthorization(someChargeId))
 
-      stripeDriver.aCreateChargeRequest returns someChargeId
-      stripeDriver.aCreateCardTokenToken returns cardToken
+      driver.aCreateChargeRequest returns someChargeId
+      driver.aCreateCardTokenToken returns someCardToken
 
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount,
-        customer = None,
-        deal = None
+        currencyAmount = someCurrencyAmount
       ) must beASuccessfulTry(
         check = ===(authorizationKey)
       )
     }
 
     "gracefully fail on rejected card" in new Ctx {
-      val cardToken = "cardToken"
-      stripeDriver.aCreateCardTokenToken returns cardToken
-      stripeDriver.aCreateChargeRequest errors(
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest errors(
         StatusCodes.PaymentRequired, StripeError(
           `type` = "card_error",
           message = "Your card was declined. Your request was in test mode, but used a non test card. For a list of valid test cards, visit: https://stripe.com/docs/testing.",
@@ -91,9 +102,20 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount,
-        customer = None,
-        deal = None
+        currencyAmount = someCurrencyAmount
+      ) must beAFailedTry(
+        check = beAnInstanceOf[PaymentRejectedException]
+      )
+    }
+
+    "gracefully fail on amount below minimum" in new Ctx {
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest failOnAmountBelowMinimum()
+
+      stripe.authorize(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        currencyAmount = someCurrencyAmount
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentRejectedException]
       )
