@@ -3,6 +3,7 @@ package com.wix.pay.stripe
 import org.specs2.mutable.SpecificationWithJUnit
 
 class StripeAmountConversionHelperTest extends SpecificationWithJUnit {
+  // list of currencies according to https://support.stripe.com/questions/which-zero-decimal-currencies-does-stripe-support
   val currencyDoubleAmountToIntAmount = Map[(Double,String),Int](
     (17.0, "USD") -> 1700,
     (17.0, "UsD") -> 1700,
