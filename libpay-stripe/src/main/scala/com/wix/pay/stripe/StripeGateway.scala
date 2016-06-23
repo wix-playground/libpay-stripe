@@ -21,7 +21,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     val token = retrieveCardToken(apiKey, creditCard)
 
     val params = Map(
-      Fields.amount -> StripeHelper.toStripeAmount(currencyAmount.amount),
+      Fields.amount -> StripeAmountConversionHelper.convert(currencyAmount.amount, currencyAmount.currency),
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
@@ -73,7 +73,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       val charge = Charge.retrieve(authorization.chargeId, requestOptionsFor(merchant.apiKey))
 
       val params = Map(
-        Fields.amount -> StripeHelper.toStripeAmount(amount)
+        Fields.amount -> StripeAmountConversionHelper.convert(amount, charge.getCurrency)
       )
       val captured = charge.capture(params, requestOptionsFor(merchant.apiKey))
       captured.getId
