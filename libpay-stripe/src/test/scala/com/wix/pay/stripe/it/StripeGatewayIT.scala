@@ -44,10 +44,12 @@ class StripeGatewayIT extends SpecWithJUnit {
         holderName = Some("some holder name"))))
 
     val someCardToken = "cardToken"
+    val someChargeId = "someChargeID"
+    val authorizationKey = authorizationParser.stringify(StripeAuthorization(someChargeId))
   }
 
-  "sale" should {
-    "gracefully fail on amount below minimum" in new Ctx {
+  "on sale, StripeGateway" should {
+    "reject on amount below minimum" in new Ctx {
       driver.aCreateCardTokenToken returns someCardToken
       driver.aCreateChargeRequest failOnAmountBelowMinimum()
 
@@ -57,6 +59,36 @@ class StripeGatewayIT extends SpecWithJUnit {
         currencyAmount = someCurrencyAmount
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentRejectedException]
+      )
+    }
+
+    "successfully execute on valid card" in new Ctx {
+      driver.aCreateChargeRequest returns someChargeId
+      driver.aCreateCardTokenToken returns someCardToken
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        currencyAmount = someCurrencyAmount
+      ) must beASuccessfulTry(
+        check = ===(someChargeId)
+      )
+    }
+
+    "fail on Invalid API Key" in new Ctx {
+      val stripeInvalidKeyErrorMessage: String = "Invalid API Key provided: " + someMerchantKey
+      val stripeInvalidKeyError = StripeError("invalid_request_error", stripeInvalidKeyErrorMessage)
+
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest errors(
+        StatusCodes.Unauthorized, stripeInvalidKeyError)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        currencyAmount = someCurrencyAmount
+      ) must beAFailedTry(
+        check = beAnInstanceOf[PaymentErrorException]
       )
     }
   }
@@ -76,9 +108,6 @@ class StripeGatewayIT extends SpecWithJUnit {
     }
 
     "successfully yield an authorization key on valid request" in new Ctx {
-      val someChargeId = "someChargeID"
-      val authorizationKey = authorizationParser.stringify(StripeAuthorization(someChargeId))
-
       driver.aCreateChargeRequest returns someChargeId
       driver.aCreateCardTokenToken returns someCardToken
 
