@@ -1,6 +1,9 @@
 package com.wix.pay
 
+
 import java.util
+import org.json4s.DefaultFormats
+
 
 package object stripe {
 
@@ -13,4 +16,7 @@ package object stripe {
       jsonStr.slice(0, ValueCharacterLimit)
     }
   }
+
+
+  implicit val stripeFormats = DefaultFormats + new LocaleCountrySerializer
 }

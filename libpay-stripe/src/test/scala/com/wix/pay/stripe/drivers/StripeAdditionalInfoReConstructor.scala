@@ -1,12 +1,13 @@
 package com.wix.pay.stripe.drivers
 
+
+import org.json4s.native.Serialization
 import com.wix.pay.creditcard.AddressDetailed
 import com.wix.pay.model.{Customer, IncludedCharges, OrderItem, ShippingAddress}
-import com.wix.pay.stripe.{CustomFormats, _}
-import org.json4s.native.Serialization
+import com.wix.pay.stripe.{MappedParams, stripeFormats}
+
 
 object StripeAdditionalInfoReConstructor {
-  implicit val formats = CustomFormats
 
   def reconstructBillingAddress(params: MappedParams) = {
     val address = params.get("Billing Address").toString

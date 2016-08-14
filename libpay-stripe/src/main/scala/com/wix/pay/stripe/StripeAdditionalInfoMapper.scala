@@ -1,41 +1,12 @@
 package com.wix.pay.stripe
 
-import java.util.Locale
 
+import org.json4s.native.Serialization
 import com.wix.pay.creditcard.{AddressDetailed, CreditCard}
 import com.wix.pay.model._
-import org.json4s.JsonAST.JString
-import org.json4s._
-import org.json4s.native.Serialization
-import org.json4s.reflect.TypeInfo
 
 
-class LocaleCountrySerializer extends Serializer[Locale] {
-  private val LocaleClass = classOf[Locale]
-
-  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Locale] = {
-    case (TypeInfo(LocaleClass, _), json) => json match {
-      case JString(country) =>
-        new Locale("", country)
-      case x => throw new MappingException("Can't convert " + x + " to LocaleClass")
-    }
-  }
-
-  def serialize(implicit formats: Formats): PartialFunction[Any, JValue] = {
-    case x: Locale =>
-      import JsonDSL._
-      x.getCountry
-  }
-}
-
-
-object CustomFormats extends DefaultFormats {
-  override val customSerializers = List(new LocaleCountrySerializer)
-}
-
-
-class StripeAdditionalInfoMapper() {
-  implicit val formats = CustomFormats
+class StripeAdditionalInfoMapper {
 
   def createMap(creditCard: CreditCard, customer: Option[Customer], deal: Option[Deal]): MappedParams = {
     val params: MappedParams = new MappedParams()
@@ -52,11 +23,11 @@ class StripeAdditionalInfoMapper() {
   }
 
   private def valueOf(customer: Customer) = {
-    Serialization.write(customer).adjustToStripeRequirements
+    Serialization.write(customer).adjustToStripeRequirements()
   }
 
   private def valueOf(billingAddress: AddressDetailed) = {
-    Serialization.write(billingAddress).adjustToStripeRequirements
+    Serialization.write(billingAddress).adjustToStripeRequirements()
   }
 
   private def extractInvoiceIdFrom(deal: Deal, intoParams: MappedParams) = {
@@ -68,16 +39,16 @@ class StripeAdditionalInfoMapper() {
   }
 
   private def valueOf(shippingAddress: ShippingAddress) = {
-    Serialization.write(shippingAddress).adjustToStripeRequirements
+    Serialization.write(shippingAddress).adjustToStripeRequirements()
   }
 
   private def extractOrderItemsFrom(deal: Deal, intoParams: MappedParams) = {
-    if (deal.orderItems.size > 0)
+    if (deal.orderItems.nonEmpty)
       intoParams.put("Order Items", valueOf(deal.orderItems))
   }
 
   private def valueOf(orderItems: Seq[OrderItem]) = {
-    Serialization.write(orderItems).adjustToStripeRequirements
+    Serialization.write(orderItems).adjustToStripeRequirements()
   }
 
   private def extractIncludedChargesFrom(deal: Deal, intoParams: MappedParams): Unit = {
@@ -85,6 +56,6 @@ class StripeAdditionalInfoMapper() {
   }
 
   private def valueOf(includedCharges: IncludedCharges) = {
-    Serialization.write(includedCharges).adjustToStripeRequirements
+    Serialization.write(includedCharges).adjustToStripeRequirements()
   }
 }
