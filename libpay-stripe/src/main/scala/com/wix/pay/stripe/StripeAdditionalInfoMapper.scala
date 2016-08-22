@@ -1,15 +1,15 @@
 package com.wix.pay.stripe
 
 
-import org.json4s.native.Serialization
 import com.wix.pay.creditcard.{AddressDetailed, CreditCard}
 import com.wix.pay.model._
+import org.json4s.native.Serialization
 
 
 class StripeAdditionalInfoMapper {
 
   def createMap(creditCard: CreditCard, customer: Option[Customer], deal: Option[Deal]): MappedParams = {
-    val params: MappedParams = new MappedParams()
+    val params = new MappedParams()
 
     creditCard.billingAddressDetailed.foreach(address => params.put("Billing Address", valueOf(address)))
     customer.foreach(customer => params.put("Customer", valueOf(customer)))
