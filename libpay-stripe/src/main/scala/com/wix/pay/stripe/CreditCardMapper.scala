@@ -4,7 +4,7 @@ import java.util
 
 import com.wix.pay.creditcard.CreditCard
 
-class CreditCardMapper {
+object CreditCardMapper {
   def cardToParams(creditCard: CreditCard): util.LinkedHashMap[String, Object] = {
     val params = new util.LinkedHashMap[String, Object]()
 

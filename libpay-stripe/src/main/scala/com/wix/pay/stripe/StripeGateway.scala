@@ -15,8 +15,6 @@ import scala.util.{Failure, Success, Try}
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
                     additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper) extends PaymentGateway {
-  val creditCardMapper = new CreditCardMapper
-
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
 
@@ -27,6 +25,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
       Fields.metadata -> additionalInfoMapper.createMap(creditCard, customer, deal)
     )
+
     Charge.create(params, requestOptionsFor(apiKey))
   }
 
@@ -36,7 +35,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     // Stripe prefers developers use Stripe.Js which is guaranteed to be PCI compliant...
     // see 'https://stripe.com/docs/connect/payments-fees' Stripe.Js box
     val params = Map(
-      Fields.card -> creditCardMapper.cardToParams(creditCard)
+      Fields.card -> CreditCardMapper.cardToParams(creditCard)
     )
     Token.create(params, requestOptionsFor(apiKey))
   }
