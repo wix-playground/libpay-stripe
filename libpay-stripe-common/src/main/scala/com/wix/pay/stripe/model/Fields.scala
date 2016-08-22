@@ -7,4 +7,5 @@ object Fields {
   val capture = "capture"
   val card = "card"
   val metadata = "metadata"
+  val receiptEmail = "receipt_email"
 }

@@ -12,13 +12,15 @@ import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, Pay
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
+
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
-                    additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper) extends PaymentGateway {
+                    additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
+                    sendReceipts: Boolean = false) extends PaymentGateway {
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
 
-    val params = Map(
+    val baseParams = Map(
       Fields.amount -> StripeAmountConversionHelper.convert(currencyAmount.amount, currencyAmount.currency),
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
@@ -26,6 +28,13 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.metadata -> additionalInfoMapper.createMap(creditCard, customer, deal)
     )
 
+    val receiptParams = if (sendReceipts) {
+      customer.flatMap { _.email.map { Fields.receiptEmail -> _ } }.toMap
+    } else {
+      Map.empty
+    }
+
+    val params = baseParams ++ receiptParams
     Charge.create(params, requestOptionsFor(apiKey))
   }
 
