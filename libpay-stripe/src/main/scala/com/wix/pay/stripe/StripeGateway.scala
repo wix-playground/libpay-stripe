@@ -5,7 +5,7 @@ import com.stripe.exception.{CardException, InvalidRequestException, StripeExcep
 import com.stripe.model.{Charge, Token}
 import com.stripe.net.RequestOptions
 import com.wix.pay.creditcard.CreditCard
-import com.wix.pay.model.{CurrencyAmount, Customer, Deal}
+import com.wix.pay.model.{CurrencyAmount, Customer, Deal, Payment}
 import com.wix.pay.stripe.model.Fields
 import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, PaymentRejectedException}
 
@@ -53,14 +53,16 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     RequestOptions.builder.setApiKey(apiKey).build
   }
 
-  override def authorize(merchantKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
+  override def authorize(merchantKey: String, creditCard: CreditCard, payment: Payment, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
     Try {
+      require(payment.installments == 1, "Stripe does not support installments")
+
       val merchant = merchantParser.parse(merchantKey)
 
       val charge = createCharge(
         apiKey = merchant.apiKey,
         creditCard = creditCard,
-        currencyAmount = currencyAmount,
+        currencyAmount = payment.currencyAmount,
         customer = customer,
         deal = deal,
         autoCapture = false)
@@ -92,14 +94,16 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     }
   }
 
-  override def sale(merchantKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
+  override def sale(merchantKey: String, creditCard: CreditCard, payment: Payment, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
     Try {
+      require(payment.installments == 1, "Stripe does not support installments")
+
       val merchant = merchantParser.parse(merchantKey)
 
       val charge = createCharge(
         apiKey = merchant.apiKey,
         creditCard = creditCard,
-        currencyAmount = currencyAmount,
+        currencyAmount = payment.currencyAmount,
         customer = customer,
         deal = deal,
         autoCapture = true)

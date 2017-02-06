@@ -1,7 +1,7 @@
 package com.wix.pay.stripe.it
 
 import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, YearMonth}
-import com.wix.pay.model.CurrencyAmount
+import com.wix.pay.model.{CurrencyAmount, Payment}
 import com.wix.pay.stripe._
 import com.wix.pay.stripe.testkit.{StripeError, StripeITEnvironment}
 import com.wix.pay.{PaymentErrorException, PaymentRejectedException}
@@ -35,6 +35,7 @@ class StripeGatewayIT extends SpecWithJUnit {
     val someMerchant = new StripeMerchant("someApiKey")
     val someMerchantKey = merchantParser.stringify(someMerchant)
     val someCurrencyAmount = CurrencyAmount("USD", 33.3)
+    val somePayment = Payment(someCurrencyAmount, 1)
     val someCreditCard = CreditCard(
       "4012888818888",
       YearMonth(2020, 12),
@@ -56,7 +57,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.sale(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentRejectedException]
       )
@@ -69,7 +70,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.sale(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beASuccessfulTry(
         check = ===(someChargeId)
       )
@@ -86,7 +87,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.sale(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentErrorException]
       )
@@ -101,7 +102,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentErrorException]
       )
@@ -114,7 +115,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beASuccessfulTry(
         check = ===(authorizationKey)
       )
@@ -131,7 +132,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentRejectedException]
       )
@@ -144,7 +145,7 @@ class StripeGatewayIT extends SpecWithJUnit {
       stripe.authorize(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
-        currencyAmount = someCurrencyAmount
+        payment = somePayment
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentRejectedException]
       )
