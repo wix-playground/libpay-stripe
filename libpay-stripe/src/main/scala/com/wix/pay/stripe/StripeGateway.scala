@@ -5,13 +5,12 @@ import com.stripe.exception.{CardException, InvalidRequestException, StripeExcep
 import com.stripe.model.{Charge, Token}
 import com.stripe.net.RequestOptions
 import com.wix.pay.creditcard.CreditCard
-import com.wix.pay.model.{CurrencyAmount, Customer, Deal, Payment}
+import com.wix.pay.model._
 import com.wix.pay.stripe.model.Fields
 import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, PaymentRejectedException}
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
-
 
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
@@ -57,7 +56,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     Try {
       require(payment.installments == 1, "Stripe does not support installments")
 
-      val merchant = merchantParser.parse(merchantKey)
+      val merchant = parseAndValidateMerchantKey(merchantKey)
 
       val charge = createCharge(
         apiKey = merchant.apiKey,
@@ -77,7 +76,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
   override def capture(merchantKey: String, authorizationKey: String, amount: Double): Try[String] = {
     Try {
-      val merchant = merchantParser.parse(merchantKey)
+      val merchant = parseAndValidateMerchantKey(merchantKey)
       val authorization = authorizationParser.parse(authorizationKey)
 
       val charge = Charge.retrieve(authorization.chargeId, requestOptionsFor(merchant.apiKey))
@@ -98,7 +97,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     Try {
       require(payment.installments == 1, "Stripe does not support installments")
 
-      val merchant = merchantParser.parse(merchantKey)
+      val merchant = parseAndValidateMerchantKey(merchantKey)
 
       val charge = createCharge(
         apiKey = merchant.apiKey,
@@ -118,7 +117,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
   override def voidAuthorization(merchantKey: String, authorizationKey: String): Try[String] = {
     Try {
-      val merchant = merchantParser.parse(merchantKey)
+      val merchant = parseAndValidateMerchantKey(merchantKey)
       val authorization = authorizationParser.parse(authorizationKey)
 
       // Stripe doesn't support voiding an authorization - you can either issue a full refund or just wait 7 days.
@@ -136,6 +135,25 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
         new PaymentRejectedException(amountBelowMinimumException.getMessage, amountBelowMinimumException)
       case _ => new PaymentErrorException(e.getMessage, e)
     }
+  }
+
+  private def parseAndValidateMerchantKey(merchantKey: String): StripeMerchant = {
+    val merchant = merchantParser.parse(merchantKey)
+
+    // Stripe uses secret keys (sk_XXX) and publishable keys (pk_XXX), we need the first.
+    // Unfortunately, when passed a publishable key, Stripe may fail with a non-indicative error message.
+    //
+    // For example, when trying to charge the test card "4222222222222", Stripe fails with
+    // "Your card was declined. Your request was in live mode, but used a known test card."
+    // (which is treated as a rejected payment),
+    // and not with
+    // "This API call cannot be made with a publishable API key. Please use a secret API key."
+    // (which is treated as an error).
+    //
+    // To work around this, we explicitly validate the API key looks like a secret key.
+    require(merchant.apiKey.startsWith("sk_"), "Invalid Stripe secret key: doesn't start with sk_")
+
+    merchant
   }
 }
 

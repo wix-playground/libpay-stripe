@@ -32,7 +32,7 @@ class StripeGatewayIT extends SpecWithJUnit {
   trait Ctx extends Scope {
     driver.resetProbe()
 
-    val someMerchant = new StripeMerchant("someApiKey")
+    val someMerchant = StripeMerchant("sk_live_someApiKey")
     val someMerchantKey = merchantParser.stringify(someMerchant)
     val someCurrencyAmount = CurrencyAmount("USD", 33.3)
     val somePayment = Payment(someCurrencyAmount, 1)
