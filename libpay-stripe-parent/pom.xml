@@ -69,6 +69,7 @@
         <com.typesafe.akka.version>2.3.6</com.typesafe.akka.version>
         <com.typesafe.akka.actor.version>${com.typesafe.akka.version}</com.typesafe.akka.actor.version>
         <com.stripe.version>5.7.1</com.stripe.version>
+        <com.google.code.gson.version>2.7</com.google.code.gson.version>
 
         <java.target.version>1.7</java.target.version>
     </properties>
