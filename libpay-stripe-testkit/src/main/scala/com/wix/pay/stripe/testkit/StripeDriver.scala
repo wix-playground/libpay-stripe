@@ -30,32 +30,32 @@ trait StripeDriverSupport {
     def isStubbedRequestEntity(entity: HttpEntity): Boolean
 
     def failOnAmountBelowMinimum(): Unit = {
-      stripeProbe.handlers += {
-        case HttpRequest(
-        httpMethod,
-        Uri.Path(`resource`),
-        _,
-        entity,
-        _) if isStubbedRequestEntity(entity) => {
-          HttpResponse(
-            status = StatusCodes.BadRequest,
-            entity = HttpEntity(ContentTypes.`application/json`,
-            "{\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"message\": \"Amount must be at least 30 pence\",\n    \"param\": \"amount\"\n  }\n}"))}
-      }
+      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"message\": \"Amount must be at least 30 pence\",\n    \"param\": \"amount\"\n  }\n}"
+      addHandler(StatusCodes.BadRequest, httpEntityData)
+    }
+
+    def failOnExpiredCard(): Unit = {
+      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"card_error\",\n    \"message\": \"The card has expired.\",\n    \"decline_code\": \"expired_card\"\n  }\n}"
+      addHandler(StatusCodes.PaymentRequired, httpEntityData)
     }
 
     def errors(statusCode: StatusCode, error: StripeError) {
+      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"" + error.`type` + "\",\n    \"message\": \"" + error.message + "\",\n    \"code\": \"" + error.code + "\"\n  }\n}"
+      addHandler(statusCode, httpEntityData)
+    }
+
+    private def addHandler(statusCode: StatusCode, httpEntityData: String): Any = {
       stripeProbe.handlers += {
         case HttpRequest(
         httpMethod,
         Uri.Path(`resource`),
         _,
         entity,
-        _) if isStubbedRequestEntity(entity) => {
+        _) if isStubbedRequestEntity(entity) =>
           HttpResponse(
             status = statusCode,
             entity = HttpEntity(ContentTypes.`application/json`,
-              "{\n  \"error\": {\n    \"type\": \"" + error.`type` + "\",\n    \"message\": \"" + error.message + "\",\n    \"code\": \"" + error.code + "\"\n  }\n}"))}
+              httpEntityData))
       }
     }
   }
