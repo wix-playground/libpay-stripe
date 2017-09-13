@@ -35,7 +35,7 @@ trait StripeDriverSupport {
     }
 
     def failOnExpiredCard(): Unit = {
-      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"card_error\",\n    \"message\": \"The card has expired.\",\n    \"decline_code\": \"expired_card\"\n  }\n}"
+      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"card_error\",\n    \"message\": \"The card has expired.\",\n    \"code\": \"card_declined\",\n    \"decline_code\": \"expired_card\"\n  }\n}"
       addHandler(StatusCodes.PaymentRequired, httpEntityData)
     }
 

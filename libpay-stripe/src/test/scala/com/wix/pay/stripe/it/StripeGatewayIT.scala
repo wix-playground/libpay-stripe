@@ -74,7 +74,22 @@ class StripeGatewayIT extends SpecWithJUnit {
       )
     }
 
-    "reject on expired card with decline code" in new Ctx {
+    "reject on expired card with code" in new Ctx {
+      val incorrectNumberError = StripeError("card_error", "The card number is incorrect.", "incorrect_number")
+
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest errors(StatusCodes.PaymentRequired, incorrectNumberError)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment
+      ) must beAFailedTry(
+        check = haveGatewayCode(Some("incorrect_number"))
+      )
+    }
+
+    "reject on expired card with code and decline code" in new Ctx {
       driver.aCreateCardTokenToken returns someCardToken
       driver.aCreateChargeRequest failOnExpiredCard()
 
@@ -83,7 +98,7 @@ class StripeGatewayIT extends SpecWithJUnit {
         creditCard = someCreditCard,
         payment = somePayment
       ) must beAFailedTry(
-        check = haveGatewayCode(Some("expired_card"))
+        check = haveGatewayCode(Some("card_declined|expired_card"))
       )
     }
 
