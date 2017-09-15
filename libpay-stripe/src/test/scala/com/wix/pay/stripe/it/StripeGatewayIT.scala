@@ -74,6 +74,21 @@ class StripeGatewayIT extends SpecWithJUnit {
       )
     }
 
+    "reject on expired card without code" in new Ctx {
+      val emptyError = StripeError("card_error", "The card number is incorrect.")
+
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest errors(StatusCodes.PaymentRequired, emptyError)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment
+      ) must beAFailedTry(
+        check = haveGatewayCode(None)
+      )
+    }
+
     "reject on expired card with code" in new Ctx {
       val incorrectNumberError = StripeError("card_error", "The card number is incorrect.", "incorrect_number")
 

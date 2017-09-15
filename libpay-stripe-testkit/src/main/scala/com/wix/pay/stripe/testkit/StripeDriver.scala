@@ -5,7 +5,6 @@ import com.stripe.Stripe
 import com.wix.hoopoe.http.testkit.EmbeddedHttpProbe
 import spray.http._
 
-
 case class StripeError(`type`: String, message: String, code: String = null)
 
 trait StripeDriverSupport {
@@ -40,7 +39,8 @@ trait StripeDriverSupport {
     }
 
     def errors(statusCode: StatusCode, error: StripeError) {
-      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"" + error.`type` + "\",\n    \"message\": \"" + error.message + "\",\n    \"code\": \"" + error.code + "\"\n  }\n}"
+      val code = Option(error.code).map(c => ",\n    \"code\": \"" + c + "\"")
+      val httpEntityData = "{\n  \"error\": {\n    \"type\": \"" + error.`type` + "\",\n    \"message\": \"" + error.message + "\"" + code.getOrElse("") + "\n  }\n}"
       addHandler(statusCode, httpEntityData)
     }
 

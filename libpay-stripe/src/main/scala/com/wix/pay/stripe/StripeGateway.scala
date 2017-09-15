@@ -131,11 +131,21 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   private def translateStripeException(e: StripeException): PaymentException = {
     e match {
       case e: CardException =>
-        val gatewayInternalCode = Option(e.getCode).map(code => Option(e.getDeclineCode).map(declineCode =>  s"$code|$declineCode").getOrElse(code))
-        new PaymentRejectedException(e.getMessage, e, gatewayInternalCode)
+        new PaymentRejectedException(e.getMessage, e, extractCardExceptionCode(e))
       case AmountBelowMinimum(amountBelowMinimumException) =>
         new PaymentRejectedException(amountBelowMinimumException.getMessage, amountBelowMinimumException)
       case _ => new PaymentErrorException(e.getMessage, e)
+    }
+  }
+
+  private def extractCardExceptionCode(e: CardException) = {
+    val code = Option(e.getCode)
+    val declineCode = Option(e.getDeclineCode)
+
+    (code, declineCode) match {
+      case (None, _) => None
+      case (_, None) => code
+      case (_, _) => Some(s"${code.get}|${declineCode.get}")
     }
   }
 
