@@ -12,16 +12,19 @@ trait StripeDriverSupport {
 
   def stripeProbe: EmbeddedHttpProbe
 
+  def start(): Unit = startStripeProbe()
   def startStripeProbe() {
     stripeProbe.doStart()
   }
 
+  def stop(): Unit = stopStripeProbe()
   def stopStripeProbe() {
     stripeProbe.doStop()
   }
 
+  def reset(): Unit = resetProbe()
   def resetProbe() {
-    stripeProbe.handlers.clear()
+    stripeProbe.reset()
   }
 
 
