@@ -3,6 +3,7 @@ package com.wix.pay.stripe.testkit
 
 import com.stripe.Stripe
 import com.wix.hoopoe.http.testkit.EmbeddedHttpProbe
+import com.wix.hoopoe.http.testkit.EmbeddedHttpProbe.NotFoundHandler
 import spray.http._
 
 
@@ -64,8 +65,8 @@ trait StripeDriverSupport {
   }
 }
 
-class StripeDriver(port: Int) extends StripeDriverSupport with ChargeStripeDriver with AccountStripeDriver with CreateCardTokenDriver {
-  val stripeProbe = new EmbeddedHttpProbe(port, EmbeddedHttpProbe.NotFoundHandler)
+class StripeDriver(val stripeProbe: EmbeddedHttpProbe) extends StripeDriverSupport with ChargeStripeDriver with AccountStripeDriver with CreateCardTokenDriver {
+  def this(port: Int) = this(new EmbeddedHttpProbe(port, NotFoundHandler))
 }
 
 trait CreateCardTokenDriver extends StripeDriverSupport {
