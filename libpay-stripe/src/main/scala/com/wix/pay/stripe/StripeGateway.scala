@@ -139,13 +139,13 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   }
 
   private def extractCardExceptionCode(e: CardException) = {
-    val code = Option(e.getCode)
-    val declineCode = Option(e.getDeclineCode)
+    val errorCode = Option(e.getCode)
+    val errorDeclineCode = Option(e.getDeclineCode)
 
-    (code, declineCode) match {
+    (errorCode, errorDeclineCode) match {
       case (None, _) => None
-      case (_, None) => code
-      case (_, _) => Some(s"${code.get}|${declineCode.get}")
+      case (_, None) => errorCode
+      case (Some(code), Some(declineCode)) => Some(s"$code|$declineCode")
     }
   }
 
