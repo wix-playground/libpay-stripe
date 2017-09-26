@@ -5,6 +5,7 @@ import com.wix.pay.model.{CurrencyAmount, Payment}
 import com.wix.pay.stripe._
 import com.wix.pay.stripe.testkit.{StripeError, StripeITEnvironment}
 import com.wix.pay.{PaymentErrorException, PaymentRejectedException}
+import org.specs2.matcher.ValueCheck
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
 import spray.http.StatusCodes
@@ -47,6 +48,16 @@ class StripeGatewayIT extends SpecWithJUnit {
     val someCardToken = "cardToken"
     val someChargeId = "someChargeID"
     val authorizationKey = authorizationParser.stringify(StripeAuthorization(someChargeId))
+
+    def haveGatewayCode(code: Option[String]): ValueCheck[Throwable] = {
+      beAnInstanceOf[PaymentRejectedException] and
+        beEqualTo(code) ^^ ((e: Throwable) => {
+          e match {
+            case e: PaymentRejectedException => e.gatewayInternalCode
+            case _ => None
+          }
+        })
+    }
   }
 
   "on sale, StripeGateway" should {
@@ -60,6 +71,49 @@ class StripeGatewayIT extends SpecWithJUnit {
         payment = somePayment
       ) must beAFailedTry(
         check = beAnInstanceOf[PaymentRejectedException]
+      )
+    }
+
+    "reject on expired card without code" in new Ctx {
+      val emptyError = StripeError("card_error", "The card number is incorrect.")
+
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest errors(StatusCodes.PaymentRequired, emptyError)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment
+      ) must beAFailedTry(
+        check = haveGatewayCode(None)
+      )
+    }
+
+    "reject on expired card with code" in new Ctx {
+      val incorrectNumberError = StripeError("card_error", "The card number is incorrect.", "incorrect_number")
+
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest errors(StatusCodes.PaymentRequired, incorrectNumberError)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment
+      ) must beAFailedTry(
+        check = haveGatewayCode(Some("incorrect_number"))
+      )
+    }
+
+    "reject on expired card with code and decline code" in new Ctx {
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest failOnExpiredCard()
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment
+      ) must beAFailedTry(
+        check = haveGatewayCode(Some("card_declined|expired_card"))
       )
     }
 
