@@ -9,11 +9,13 @@ import com.wix.e2e.http.client.extractors.HttpMessageExtractors._
 import com.wix.e2e.http.server.WebServerFactory._
 
 
-class StripeDriver(port: Int) {
-  // Ugly, but seems to be the only way to do this
-  Stripe.overrideApiBase(s"http://localhost:$port")
+class StripeDriver(server: StubWebServer) {
 
-  val server: StubWebServer = aStubWebServer.onPort(port).build
+  def this(port: Int) {
+    this(aStubWebServer.onPort(port).build)
+    // Ugly, but seems to be the only way to do this
+    Stripe.overrideApiBase(s"http://localhost:$port")
+  }
 
   def start(): Unit = server.start()
   def stop(): Unit = server.stop()
