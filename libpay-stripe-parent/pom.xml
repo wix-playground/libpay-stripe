@@ -56,10 +56,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <scala.dependencies.version>2.11</scala.dependencies.version>
-        <scala.library.version>2.11.8</scala.library.version>
+        <scala.dependencies.version>2.12</scala.dependencies.version>
+        <scala.library.version>2.12.4</scala.library.version>
         <com.wix.http.testkit.version>0.1.15</com.wix.http.testkit.version>
-        <org.specs2.version>3.6.1</org.specs2.version>
+        <org.specs2.version>3.8.6</org.specs2.version>
         <com.google.http.client.version>1.22.0</com.google.http.client.version>
         <org.json4js.version>3.5.3</org.json4js.version>
         <com.wix.pay.libpay.version>1.6.0-SNAPSHOT</com.wix.pay.libpay.version>
