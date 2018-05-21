@@ -16,6 +16,10 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
                     additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
                     sendReceipts: Boolean = false) extends PaymentGateway {
+  private val defaultConnectTimeout = 30 * 1000
+  private val defaultReadTimeout = 80 * 1000
+
+
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
 
@@ -48,9 +52,11 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
     Token.create(params, requestOptionsFor(apiKey))
   }
 
-  private def requestOptionsFor(apiKey: String): RequestOptions = {
-    RequestOptions.builder.setApiKey(apiKey).build
-  }
+  private def requestOptionsFor(apiKey: String): RequestOptions = RequestOptions.builder
+    .setApiKey(apiKey)
+    .setConnectTimeout(defaultConnectTimeout)
+    .setReadTimeout(defaultReadTimeout)
+    .build
 
   override def authorize(merchantKey: String, creditCard: CreditCard, payment: Payment, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
     Try {
