@@ -54,12 +54,12 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
   private def requestOptionsFor(apiKey: String): RequestOptions = RequestOptions.builder
     .setApiKey(apiKey)
-    .withTimeout(_.setConnectTimeout, connectTimeout)
-    .withTimeout(_.setReadTimeout, readTimeout)
+    .setWith(_.setConnectTimeout, connectTimeout)
+    .setWith(_.setReadTimeout, readTimeout)
     .build
 
   private implicit class `RequestOptionsTimeoutBuilder`(builder: RequestOptionsBuilder) {
-    def withTimeout(builderModifier: RequestOptionsBuilder ⇒ Int ⇒ RequestOptionsBuilder, maybeTimeout: Option[Int]) = maybeTimeout match {
+    def setWith[A](builderModifier: RequestOptionsBuilder ⇒ A ⇒ RequestOptionsBuilder, maybeTimeout: Option[A]) = maybeTimeout match {
       case Some(timeout) ⇒ builderModifier(builder)(timeout)
       case None ⇒ builder
     }
