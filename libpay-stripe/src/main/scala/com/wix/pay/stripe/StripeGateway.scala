@@ -4,6 +4,7 @@ package com.wix.pay.stripe
 import com.stripe.exception.{CardException, InvalidRequestException, StripeException}
 import com.stripe.model.{Charge, Token}
 import com.stripe.net.RequestOptions
+import com.stripe.net.RequestOptions.RequestOptionsBuilder
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.model._
 import com.wix.pay.stripe.model.Fields
@@ -15,10 +16,9 @@ import scala.util.{Failure, Success, Try}
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
                     additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
-                    sendReceipts: Boolean = false) extends PaymentGateway {
-  private val defaultConnectTimeout = 30 * 1000
-  private val defaultReadTimeout = 80 * 1000
-
+                    sendReceipts: Boolean = false,
+                    connectTimeout: Option[Int] = None,
+                    readTimeout: Option[Int] = None) extends PaymentGateway {
 
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
@@ -54,9 +54,16 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
   private def requestOptionsFor(apiKey: String): RequestOptions = RequestOptions.builder
     .setApiKey(apiKey)
-    .setConnectTimeout(defaultConnectTimeout)
-    .setReadTimeout(defaultReadTimeout)
+    .withTimeout(_.setConnectTimeout, connectTimeout)
+    .withTimeout(_.setReadTimeout, readTimeout)
     .build
+
+  private implicit class `RequestOptionsTimeoutBuilder`(builder: RequestOptionsBuilder) {
+    def withTimeout(builderModifier: RequestOptionsBuilder ⇒ Int ⇒ RequestOptionsBuilder, maybeTimeout: Option[Int]) = maybeTimeout match {
+      case Some(timeout) ⇒ builderModifier(builder)(timeout)
+      case None ⇒ builder
+    }
+  }
 
   override def authorize(merchantKey: String, creditCard: CreditCard, payment: Payment, customer: Option[Customer], deal: Option[Deal]): Try[String] = {
     Try {
