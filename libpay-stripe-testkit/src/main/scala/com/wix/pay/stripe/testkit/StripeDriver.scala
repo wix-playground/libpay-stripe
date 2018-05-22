@@ -8,6 +8,8 @@ import com.wix.e2e.http.api.StubWebServer
 import com.wix.e2e.http.client.extractors.HttpMessageExtractors._
 import com.wix.e2e.http.server.WebServerFactory._
 
+import scala.concurrent.duration.Duration
+
 
 class StripeDriver(server: StubWebServer) {
 
@@ -73,7 +75,7 @@ class StripeDriver(server: StubWebServer) {
       true
     }
 
-    protected def addHandler(statusCode: StatusCode, httpEntityData: String, delay: Option[Long] = None): Any = {
+    protected def addHandler(statusCode: StatusCode, httpEntityData: String, delay: Option[Duration] = None): Any = {
       server.appendAll {
         case HttpRequest(
           _,
@@ -81,7 +83,7 @@ class StripeDriver(server: StubWebServer) {
           _,
           entity,
           _) if isStubbedRequestEntity(entity) =>
-            delay.foreach(Thread.sleep)
+            delay.map(_.toMillis).foreach(Thread.sleep)
             HttpResponse(
               status = statusCode,
               entity = HttpEntity(ContentTypes.`application/json`,
@@ -283,7 +285,7 @@ class StripeDriver(server: StubWebServer) {
 
 
   class CreateChargeCtx() extends Ctx("/v1/charges") {
-    def returns(chargeId: String, delay: Option[Long] = None) {
+    def returns(chargeId: String, delay: Option[Duration] = None) {
       addHandler(
         StatusCodes.OK,
         s"""{

@@ -14,6 +14,8 @@ import org.specs2.matcher.ValueCheck
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
 
+import scala.concurrent.duration._
+
 
 class StripeGatewayIT extends SpecWithJUnit {
 
@@ -24,8 +26,8 @@ class StripeGatewayIT extends SpecWithJUnit {
   val stripe = new StripeGateway(
     merchantParser = merchantParser,
     authorizationParser = authorizationParser,
-    connectTimeout = Some(1 * 1000),
-    readTimeout = Some(2 * 1000)
+    connectTimeout = Some(1.second),
+    readTimeout = Some(2.seconds)
   )
 
   step {
@@ -138,7 +140,7 @@ class StripeGatewayIT extends SpecWithJUnit {
 
     "fail with timeout on Stripe delay" in new Ctx {
       driver.aCreateCardTokenToken returns someCardToken
-      driver.aCreateChargeRequest returns(someChargeId, Some(4 * 1000))
+      driver.aCreateChargeRequest returns(someChargeId, Some(4.seconds))
 
       stripe.sale(
         merchantKey = someMerchantKey,

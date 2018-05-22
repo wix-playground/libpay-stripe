@@ -11,14 +11,15 @@ import com.wix.pay.stripe.model.Fields
 import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, PaymentRejectedException}
 
 import scala.collection.JavaConversions._
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
                     additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
                     sendReceipts: Boolean = false,
-                    connectTimeout: Option[Int] = None,
-                    readTimeout: Option[Int] = None) extends PaymentGateway {
+                    connectTimeout: Option[Duration] = None,
+                    readTimeout: Option[Duration] = None) extends PaymentGateway {
 
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
@@ -54,13 +55,13 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
   private def requestOptionsFor(apiKey: String): RequestOptions = RequestOptions.builder
     .setApiKey(apiKey)
-    .setWith(_.setConnectTimeout, connectTimeout)
-    .setWith(_.setReadTimeout, readTimeout)
+    .setWith(_.setConnectTimeout, connectTimeout.map(_.toMillis.intValue()))
+    .setWith(_.setReadTimeout, readTimeout.map(_.toMillis.intValue()))
     .build
 
   private implicit class `RequestOptionsTimeoutBuilder`(builder: RequestOptionsBuilder) {
-    def setWith[A](builderModifier: RequestOptionsBuilder ⇒ A ⇒ RequestOptionsBuilder, maybeTimeout: Option[A]) = maybeTimeout match {
-      case Some(timeout) ⇒ builderModifier(builder)(timeout)
+    def setWith[A](builderModifier: RequestOptionsBuilder ⇒ A ⇒ RequestOptionsBuilder, maybeParam: Option[A]) = maybeParam match {
+      case Some(param) ⇒ builderModifier(builder)(param)
       case None ⇒ builder
     }
   }
