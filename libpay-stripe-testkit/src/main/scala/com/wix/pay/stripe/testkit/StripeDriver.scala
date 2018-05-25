@@ -8,6 +8,8 @@ import com.wix.e2e.http.api.StubWebServer
 import com.wix.e2e.http.client.extractors.HttpMessageExtractors._
 import com.wix.e2e.http.server.WebServerFactory._
 
+import scala.concurrent.duration.Duration
+
 
 class StripeDriver(server: StubWebServer) {
 
@@ -73,7 +75,7 @@ class StripeDriver(server: StubWebServer) {
       true
     }
 
-    protected def addHandler(statusCode: StatusCode, httpEntityData: String): Any = {
+    protected def addHandler(statusCode: StatusCode, httpEntityData: String, delay: Option[Duration] = None): Any = {
       server.appendAll {
         case HttpRequest(
           _,
@@ -81,6 +83,7 @@ class StripeDriver(server: StubWebServer) {
           _,
           entity,
           _) if isStubbedRequestEntity(entity) =>
+            delay.map(_.toMillis).foreach(Thread.sleep)
             HttpResponse(
               status = statusCode,
               entity = HttpEntity(ContentTypes.`application/json`,
@@ -282,7 +285,7 @@ class StripeDriver(server: StubWebServer) {
 
 
   class CreateChargeCtx() extends Ctx("/v1/charges") {
-    def returns(chargeId: String) {
+    def returns(chargeId: String, delay: Option[Duration] = None) {
       addHandler(
         StatusCodes.OK,
         s"""{
@@ -339,7 +342,9 @@ class StripeDriver(server: StubWebServer) {
            |    "url": "/v1/charges/$chargeId/refunds\",
            |    "data": []
            |  }
-           |}""".stripMargin)
+           |}""".stripMargin,
+        delay
+      )
     }
 
     override def isStubbedRequestEntity(entity: HttpEntity): Boolean = {

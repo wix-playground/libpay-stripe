@@ -1,9 +1,8 @@
 package com.wix.pay.stripe.it
 
 
-import org.specs2.matcher.ValueCheck
-import org.specs2.mutable.SpecWithJUnit
-import org.specs2.specification.Scope
+import java.net.SocketTimeoutException
+
 import akka.http.scaladsl.model.StatusCodes
 import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, YearMonth}
 import com.wix.pay.model.{CurrencyAmount, Payment}
@@ -11,6 +10,11 @@ import com.wix.pay.stripe._
 import com.wix.pay.stripe.testkit.StripeITEnvironment.StripePort
 import com.wix.pay.stripe.testkit.{StripeDriver, StripeError}
 import com.wix.pay.{PaymentErrorException, PaymentRejectedException}
+import org.specs2.matcher.ValueCheck
+import org.specs2.mutable.SpecWithJUnit
+import org.specs2.specification.Scope
+
+import scala.concurrent.duration._
 
 
 class StripeGatewayIT extends SpecWithJUnit {
@@ -21,8 +25,10 @@ class StripeGatewayIT extends SpecWithJUnit {
   val merchantParser = new JsonStripeMerchantParser()
   val stripe = new StripeGateway(
     merchantParser = merchantParser,
-    authorizationParser = authorizationParser)
-
+    authorizationParser = authorizationParser,
+    connectTimeout = Some(1.second),
+    readTimeout = Some(2.seconds)
+  )
 
   step {
     driver.start()
@@ -130,6 +136,19 @@ class StripeGatewayIT extends SpecWithJUnit {
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
         payment = somePayment) must beAFailedTry(check = beAnInstanceOf[PaymentErrorException])
+    }
+
+    "fail with timeout on Stripe delay" in new Ctx {
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest returns(someChargeId, Some(4.seconds))
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment) must beAFailedTry(check =
+            beAnInstanceOf[PaymentErrorException] and
+            beAnInstanceOf[SocketTimeoutException] ^^ ((_: Throwable).asInstanceOf[PaymentErrorException].getCause.getCause)
+          )
     }
   }
 
