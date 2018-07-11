@@ -101,7 +101,7 @@ class StripeDriver(server: StubWebServer) {
           |  "id": "acct_16aSJ6EMKwVXA0As",
           |  "email": "natans@wix.com",
           |  "statement_descriptor": null,
-          |  "display_name": null,
+          |  "display_name": "someAccountName",
           |  "timezone": "Asia/Jerusalem",
           |  "details_submitted": false,
           |  "charges_enabled": false,
