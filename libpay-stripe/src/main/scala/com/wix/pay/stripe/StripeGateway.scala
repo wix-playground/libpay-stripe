@@ -11,13 +11,12 @@ import com.wix.pay.stripe.model.Fields
 import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, PaymentRejectedException}
 
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
-                    chargeMetadataToEmailHelper: ChargeMetadataToEmailHelper = new ChargeMetadataToEmailHelper,
+                    additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
                     sendReceipts: Boolean = false,
                     connectTimeout: Option[Duration] = None,
                     readTimeout: Option[Duration] = None) extends PaymentGateway {
@@ -30,16 +29,16 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
-      Fields.metadata -> chargeMetadataToEmailHelper.getMetadataForEmail(creditCard, customer, deal).asJava
+      Fields.metadata -> additionalInfoMapper.createMap(creditCard, customer, deal)
     )
 
-    val receiptParam = for {
-      c ← customer
-      email ← c.email
-      if sendReceipts
-    } yield Fields.receiptEmail -> email
+    val receiptParams = if (sendReceipts) {
+      customer.flatMap { _.email.map { Fields.receiptEmail -> _ } }.toMap
+    } else {
+      Map.empty
+    }
 
-    val params = baseParams ++ receiptParam.toMap
+    val params = baseParams ++ receiptParams
     Charge.create(params, requestOptionsFor(apiKey))
   }
 
