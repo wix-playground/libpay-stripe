@@ -2,6 +2,7 @@ package com.wix.pay.stripe
 
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.model.{Customer, Deal, OrderItem}
+import com.wix.pay.stripe.ChargeMetadataToEmailHelper._
 
 import scala.collection.immutable.ListMap
 
@@ -26,7 +27,7 @@ class ChargeMetadataToEmailHelper {
     val itemsInfo = orderItemsInfo(deal)
 
     val emailPairs = (customerInfo.toSeq ++ itemsInfo.toSeq ++ includedChargesInfo.toSeq).collect {
-      case (k, Some(v)) ⇒ (k, v)
+      case (k, Some(v)) ⇒ (k.cropTo(KeyCharacterLimit), v.cropTo(ValueCharacterLimit))
     }
 
     ListMap(emailPairs:_*)
@@ -74,4 +75,13 @@ class ChargeMetadataToEmailHelper {
     shipping ← includedCharges.shipping
   } yield shipping.toString
 
+}
+
+object ChargeMetadataToEmailHelper {
+  final val ValueCharacterLimit = 500
+  final val KeyCharacterLimit = 40
+
+  implicit class `StringShorterer`(s: String) {
+    def cropTo(length: Int): String = s.slice(0, length)
+  }
 }

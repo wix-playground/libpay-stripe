@@ -63,6 +63,20 @@ class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
       )
     }
 
+    "has no keys / values too long for Stripe" in new ctx {
+      val tooLongCustomerName = "Freddy " * 100
+      val tooLongIp = "I'm a hacker's IP, MUAHHAH! " * 100
+      val customer = someCustomer.map(_.copy(
+        name = someCustomer.get.name.map(_.copy(first = tooLongCustomerName)),
+        ipAddress = Some(tooLongIp)
+      ))
+
+      val metadata = emailHelper.getMetadataForEmail(someCreditCard, customer, someDeal)
+
+      metadata.keys must not(contain(stringLongerThen(40)))
+      metadata.values must not(contain(stringLongerThen(500)))
+    }
+
   }
 
   trait ctx extends Scope with StripeAdditionalInfoDomain {
@@ -80,6 +94,9 @@ class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
 
     def contains(patterns: Option[String]*): Matcher[String] =
       patterns.flatten.map(contain).reduce(_ and _)
+
+    def stringLongerThen(length: Int): Matcher[String] =
+      beGreaterThan(length) ^^ ((_: String).length aka "the string length")
   }
 
 }
