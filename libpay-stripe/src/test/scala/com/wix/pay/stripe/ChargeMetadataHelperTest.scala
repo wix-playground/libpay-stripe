@@ -6,11 +6,11 @@ import org.specs2.matcher.{Matcher, Matchers}
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
 
-class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
+class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
 
-  "Stripe metadata email" should {
+  "Stripe metadata" should {
     "has proper metadata fields order" in new ctx {
-      emailHelper.getMetadataForEmail(someCreditCard, someCustomer, someDeal) must haveOrderedKeys(keys =
+      metadataHelper.getMetadata(someCreditCard, someCustomer, someDeal) must haveOrderedKeys(keys =
         "Billing Address",
         "Customer Name",
         "Customer Phone",
@@ -28,7 +28,7 @@ class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
     "has proper metadata fields order without empty fields" in new ctx {
       val customerWithoutIp: Option[Customer] = someCustomer.map(_.copy(ipAddress = None))
 
-      emailHelper.getMetadataForEmail(someCreditCard, customerWithoutIp, someDeal) must haveOrderedKeys(keys =
+      metadataHelper.getMetadata(someCreditCard, customerWithoutIp, someDeal) must haveOrderedKeys(keys =
         "Billing Address",
         "Customer Name",
         "Customer Phone",
@@ -42,13 +42,49 @@ class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
       )
     }
 
+    "has limited by Stripe count of keys" in new ctx {
+      val aBigDeal = Option(someDeal.get.copy(orderItems = Seq.fill(40)(orderItems(1))))
+
+      metadataHelper.getMetadata(someCreditCard, someCustomer, aBigDeal) must haveSize(lessThanOrEqualTo(20))
+    }
+
+    "has limited count of orderItems" in new ctx {
+      val multipleOrderItems = for (i ← 1 to 20) yield
+        orderItems(1).copy(name = Some(s"OrderItemName #$i"))
+
+      val aBigDeal = Option(someDeal.get.copy(orderItems = multipleOrderItems))
+
+      metadataHelper.getMetadata(someCreditCard, someCustomer, aBigDeal) must haveOrderedKeys(keys =
+        "Billing Address",
+        "Customer Name",
+        "Customer Phone",
+        "Customer Email",
+        "Customer IP",
+        "Invoice Id",
+        "Shipping Address",
+        "OrderItemName #1",
+        "OrderItemName #2",
+        "OrderItemName #3",
+        "OrderItemName #4",
+        "OrderItemName #5",
+        "OrderItemName #6",
+        "OrderItemName #7",
+        "OrderItemName #8",
+        "OrderItemName #9",
+        "OrderItemName #10",
+        "OrderItemName #11",
+        "Included Charges: Tax",
+        "Included Charges: Shipping"
+      )
+    }
+
     "has required metadata values" in new ctx {
       val bAddress = someCreditCard.billingAddressDetailed.get
       val sAddress = someDeal.get.shippingAddress.get
       val charges = someDeal.get.includedCharges.get
       val customer = someCustomer.get
 
-      emailHelper.getMetadataForEmail(someCreditCard, someCustomer, someDeal) must havePairs[String, String](
+      metadataHelper.getMetadata(someCreditCard, someCustomer, someDeal) must havePairs[String, String](
         ("Billing Address", contains(bAddress.street, bAddress.city, bAddress.postalCode, bAddress.state, bAddress.countryCode.map(_.getCountry))),
         ("Customer Name", be_==(customer.name.get.first + " " + customer.name.get.last)),
         ("Customer Phone", be_==(customer.phone.get)),
@@ -71,8 +107,9 @@ class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
         ipAddress = Some(tooLongIp)
       ))
 
-      val metadata = emailHelper.getMetadataForEmail(someCreditCard, customer, someDeal)
+      val metadata = metadataHelper.getMetadata(someCreditCard, customer, someDeal)
 
+      metadata.keys must haveSize(beLessThanOrEqualTo(20))
       metadata.keys must not(contain(stringLongerThen(40)))
       metadata.values must not(contain(stringLongerThen(500)))
     }
@@ -80,7 +117,7 @@ class ChargeMetadataToEmailHelperTest extends SpecWithJUnit with Matchers {
   }
 
   trait ctx extends Scope with StripeAdditionalInfoDomain {
-    val emailHelper = new ChargeMetadataToEmailHelper
+    val metadataHelper = new ChargeMetadataHelper
 
     def haveOrderedKeys[K](keys: K*): Matcher[Map[K, AnyRef]] =
       contain(exactly(keys: _*).inOrder) ^^ ((_: Map[K, AnyRef]).keySet)

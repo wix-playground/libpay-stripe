@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
-                    chargeMetadataToEmailHelper: ChargeMetadataToEmailHelper = new ChargeMetadataToEmailHelper,
+                    chargeMetadataToEmailHelper: ChargeMetadataHelper = new ChargeMetadataHelper,
                     sendReceipts: Boolean = false,
                     connectTimeout: Option[Duration] = None,
                     readTimeout: Option[Duration] = None) extends PaymentGateway {
@@ -30,7 +30,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
-      Fields.metadata -> chargeMetadataToEmailHelper.getMetadataForEmail(creditCard, customer, deal).asJava
+      Fields.metadata -> chargeMetadataToEmailHelper.getMetadata(creditCard, customer, deal).asJava
     )
 
     val receiptParam = for {

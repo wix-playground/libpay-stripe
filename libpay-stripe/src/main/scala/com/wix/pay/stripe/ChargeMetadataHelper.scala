@@ -2,12 +2,12 @@ package com.wix.pay.stripe
 
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.model.{Customer, Deal, OrderItem}
-import com.wix.pay.stripe.ChargeMetadataToEmailHelper._
+import com.wix.pay.stripe.ChargeMetadataHelper._
 
 import scala.collection.immutable.ListMap
 
-class ChargeMetadataToEmailHelper {
-  def getMetadataForEmail(creditCard: CreditCard, customer: Option[Customer], deal: Option[Deal]): Map[String, String] = {
+class ChargeMetadataHelper {
+  def getMetadata(creditCard: CreditCard, customer: Option[Customer], deal: Option[Deal]): Map[String, String] = {
 
     val customerInfo = ListMap(
       "Billing Address" → billingAddressInfo(creditCard),
@@ -24,13 +24,14 @@ class ChargeMetadataToEmailHelper {
       "Included Charges: Shipping" → deal.flatMap(chargeShippingInfo)
     )
 
-    val itemsInfo = orderItemsInfo(deal)
+    val keysLeftForOrderItems = KeysLimit - customerInfo.size - includedChargesInfo.size
+    val itemsInfo = orderItemsInfo(deal).slice(0, keysLeftForOrderItems)
 
-    val emailPairs = (customerInfo.toSeq ++ itemsInfo.toSeq ++ includedChargesInfo.toSeq).collect {
+    val pairs = (customerInfo.toSeq ++ itemsInfo.toSeq ++ includedChargesInfo.toSeq).collect {
       case (k, Some(v)) ⇒ (k.cropTo(KeyCharacterLimit), v.cropTo(ValueCharacterLimit))
     }
 
-    ListMap(emailPairs:_*)
+    ListMap(pairs:_*).slice(0, KeysLimit)
   }
 
   private def orderItemsInfo(maybeDeal: Option[Deal]) = {
@@ -77,9 +78,10 @@ class ChargeMetadataToEmailHelper {
 
 }
 
-object ChargeMetadataToEmailHelper {
+object ChargeMetadataHelper {
   final val ValueCharacterLimit = 500
   final val KeyCharacterLimit = 40
+  final val KeysLimit = 20
 
   implicit class `StringShorterer`(s: String) {
     def cropTo(length: Int): String = s.slice(0, length)
