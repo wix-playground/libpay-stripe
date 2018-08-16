@@ -25,8 +25,25 @@ class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
       )
     }
 
-    "has proper metadata fields order without empty fields" in new ctx {
+    "has proper metadata fields order without empty values" in new ctx {
       val customerWithoutIp: Option[Customer] = someCustomer.map(_.copy(ipAddress = None))
+
+      metadataHelper.getMetadata(someCreditCard, customerWithoutIp, someDeal) must haveOrderedKeys(keys =
+        "Billing Address",
+        "Customer Name",
+        "Customer Phone",
+        "Customer Email",
+        "Invoice Id",
+        "Shipping Address",
+        "OrderItemName",
+        "OrderItemName2",
+        "Included Charges: Tax",
+        "Included Charges: Shipping"
+      )
+    }
+
+    "has proper metadata fields order without empty string values" in new ctx {
+      val customerWithoutIp: Option[Customer] = someCustomer.map(_.copy(ipAddress = Some("")))
 
       metadataHelper.getMetadata(someCreditCard, customerWithoutIp, someDeal) must haveOrderedKeys(keys =
         "Billing Address",

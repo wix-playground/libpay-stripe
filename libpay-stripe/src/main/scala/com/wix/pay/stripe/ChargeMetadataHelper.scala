@@ -28,7 +28,7 @@ class ChargeMetadataHelper {
     val itemsInfo = orderItemsInfo(deal).slice(0, keysLeftForOrderItems)
 
     val pairs = (customerInfo.toSeq ++ itemsInfo.toSeq ++ includedChargesInfo.toSeq).collect {
-      case (k, Some(v)) ⇒ (k.cropTo(KeyCharacterLimit), v.cropTo(ValueCharacterLimit))
+      case (k, Some(v)) if k.nonEmpty &&  v.nonEmpty ⇒ (k.cropTo(KeyCharacterLimit), v.cropTo(ValueCharacterLimit))
     }
 
     ListMap(pairs:_*).slice(0, KeysLimit)
