@@ -9,7 +9,7 @@ import com.wix.pay.model.{CurrencyAmount, Payment}
 import com.wix.pay.stripe._
 import com.wix.pay.stripe.testkit.StripeITEnvironment.StripePort
 import com.wix.pay.stripe.testkit.{StripeDriver, StripeError}
-import com.wix.pay.{PaymentErrorException, PaymentRejectedException}
+import com.wix.pay.{AccountException, PaymentErrorException, PaymentRejectedException}
 import org.specs2.matcher.ValueCheck
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
@@ -78,6 +78,26 @@ class StripeGatewayIT extends SpecWithJUnit {
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
         payment = somePayment) must beAFailedTry(check = beAnInstanceOf[PaymentRejectedException])
+    }
+
+    "reject on this account cannot make live charges" in new Ctx {
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest failOnThisAccountCannotMakeLiveCharges()
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment) must beAFailedTry(check = beAnInstanceOf[AccountException])
+    }
+
+    "reject on your account cannot make live charges" in new Ctx {
+      driver.aCreateCardTokenToken returns someCardToken
+      driver.aCreateChargeRequest failOnYourAccountCannotMakeLiveCharges()
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment) must beAFailedTry(check = beAnInstanceOf[AccountException])
     }
 
     "reject on expired card without code" in new Ctx {
