@@ -43,6 +43,30 @@ class StripeDriver(server: StubWebServer) {
       addHandler(StatusCodes.BadRequest, httpEntityData)
     }
 
+    def failOnThisAccountCannotMakeLiveCharges(): Unit = {
+      val httpEntityData =
+        """{
+          |  "error": {
+          |    "type": "invalid_request_error",
+          |    "message": "This account cannot currently make live charges. If you are a customer trying to make a purchase, please contact the owner of this site. Your transaction has not been processed."
+          |  }
+          |}""".stripMargin
+
+      addHandler(StatusCodes.BadRequest, httpEntityData)
+    }
+
+    def failOnYourAccountCannotMakeLiveCharges(): Unit = {
+      val httpEntityData =
+        """{
+          |  "error": {
+          |    "type": "invalid_request_error",
+          |    "message": "Your account cannot currently make live charges.; request-id: req_m5ym8lHvB4I1VX"
+          |  }
+          |}""".stripMargin
+
+      addHandler(StatusCodes.BadRequest, httpEntityData)
+    }
+
     def failOnExpiredCard(): Unit = {
       val httpEntityData =
         """{

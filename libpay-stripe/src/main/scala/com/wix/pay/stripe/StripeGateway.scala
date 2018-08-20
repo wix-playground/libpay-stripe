@@ -8,7 +8,7 @@ import com.stripe.net.RequestOptions.RequestOptionsBuilder
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.model._
 import com.wix.pay.stripe.model.Fields
-import com.wix.pay.{PaymentErrorException, PaymentException, PaymentGateway, PaymentRejectedException}
+import com.wix.pay._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
@@ -149,6 +149,8 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
         new PaymentRejectedException(e.getMessage, e, extractCardExceptionCode(e))
       case AmountBelowMinimum(amountBelowMinimumException) =>
         new PaymentRejectedException(amountBelowMinimumException.getMessage, amountBelowMinimumException)
+      case AccountCannotMakeLiveCharges(accountCannotMakeLiveChargesException) =>
+        new AccountException(accountCannotMakeLiveChargesException.getMessage, accountCannotMakeLiveChargesException)
       case _ => new PaymentErrorException(e.getMessage, e)
     }
   }
@@ -190,6 +192,16 @@ private object AmountBelowMinimum {
     // Reliance on the error message is crude, but seems necessary.
     // The full error message goes something like "Amount must be at least 30 pence"
     if ((e.getParam == Fields.amount) && e.getMessage.startsWith("Amount must be at least ")) {
+      Some(e)
+    } else {
+      None
+    }
+  }
+}
+
+private object AccountCannotMakeLiveCharges {
+  def unapply(e: InvalidRequestException): Option[InvalidRequestException] = {
+    if (e.getMessage.contains("account cannot currently make live charges")) {
       Some(e)
     } else {
       None
