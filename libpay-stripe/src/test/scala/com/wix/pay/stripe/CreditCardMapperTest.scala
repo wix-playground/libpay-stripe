@@ -1,25 +1,18 @@
 package com.wix.pay.stripe
 
-import java.util
-
-import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, YearMonth}
-import org.specs2.matcher.Matcher
+import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, PublicCreditCardOptionalFields, YearMonth}
+import com.wix.pay.stripe.drivers.StripeMatchers
 import org.specs2.mutable.SpecificationWithJUnit
 import org.specs2.specification.Scope
 
-class CreditCardMapperTest extends SpecificationWithJUnit {
+class CreditCardMapperTest extends SpecificationWithJUnit with StripeMatchers {
   "CreditCardMapper" should {
-    "create params with all relevant fields " in new ctx {
-      CreditCardMapper.cardToParams(someCreditCard) must
-        havePair("address_line1", billingAddress.get) and
-        havePair("address_zip", billingPostalCode.get) and
-        havePair("name", holderName.get)
+    "create params with all relevant fields " in new ctx{
+      CreditCardMapper.cardToParams(someCreditCard) must haveFieldParams(expectedFields)
     }
 
     "return params without address and zip code as they are empty Strings " in new ctx {
-      CreditCardMapper.cardToParams(emptyFieldsCreditCard) must
-        not(haveKey("address_line1")) and
-        not(haveKey("address_zip"))
+      CreditCardMapper.cardToParams(emptyFieldsCreditCard) must not(haveAnyEmptyFields)
     }
   }
 
@@ -49,11 +42,6 @@ class CreditCardMapperTest extends SpecificationWithJUnit {
         billingAddress = Some(""),
         billingPostalCode = Some(""))))
 
-    def havePair(key: String, value: AnyRef): Matcher[util.LinkedHashMap[String, Object]] =
-      be_==(value) ^^ ((_: util.LinkedHashMap[String, Object]).get(key))
-
-    def haveKey(key: String): Matcher[util.LinkedHashMap[String, Object]] =
-      beTrue ^^ ((_: util.LinkedHashMap[String, Object]).containsKey(key))
+    val expectedFields = PublicCreditCardOptionalFields(holderId, holderName, billingAddress, billingPostalCode)
   }
-
 }
