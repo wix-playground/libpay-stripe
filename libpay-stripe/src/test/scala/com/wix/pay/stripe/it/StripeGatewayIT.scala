@@ -10,6 +10,7 @@ import com.wix.pay.stripe._
 import com.wix.pay.stripe.testkit.StripeITEnvironment.StripePort
 import com.wix.pay.stripe.testkit.{StripeDriver, StripeError}
 import com.wix.pay.{AccountException, PaymentErrorException, PaymentRejectedException}
+import com.wix.pay.testkit.LibPayTestSupport._
 import org.specs2.matcher.ValueCheck
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
@@ -142,6 +143,17 @@ class StripeGatewayIT extends SpecWithJUnit {
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
         payment = somePayment) must beASuccessfulTry(check = ===(someChargeId))
+    }
+
+    "successfully execute with not empty customer" in new Ctx {
+      driver.aCreateChargeRequest returns someChargeId
+      driver.aCreateCardTokenToken returns someCardToken
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment,
+        customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
     }
 
     "fail on Invalid API Key" in new Ctx {

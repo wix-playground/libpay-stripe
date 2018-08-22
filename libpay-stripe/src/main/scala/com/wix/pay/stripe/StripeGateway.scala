@@ -29,7 +29,12 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
-      Fields.metadata -> additionalInfoMapper.createMap(creditCard, customer, deal)
+      Fields.metadata -> additionalInfoMapper.createMap(creditCard, customer, deal),
+      Fields.ip -> customer.map(_.ipAddress).orNull,
+      Fields.userAgent -> customer.map(_.userAgent).orNull,
+      Fields.referrer -> customer.map(_.referrer).orNull,
+      Fields.deviceId -> customer.map(_.deviceId).orNull,
+      Fields.externalId -> customer.map(_.id).orNull
     )
 
     val receiptParams = if (sendReceipts) {

@@ -8,4 +8,9 @@ object Fields {
   val card = "card"
   val metadata = "metadata"
   val receiptEmail = "receipt_email"
+  val ip = "ip"
+  val userAgent = "user_agent"
+  val referrer = "referrer"
+  val externalId = "external_id"
+  val deviceId = "device_id"
 }

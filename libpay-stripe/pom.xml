@@ -81,5 +81,10 @@
             <version>1.0.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.wix.pay</groupId>
+            <artifactId>libpay-testkit</artifactId>
+            <version>${com.wix.pay.libpay.version}</version>
+        </dependency>
     </dependencies>
 </project>
