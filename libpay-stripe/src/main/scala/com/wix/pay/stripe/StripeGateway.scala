@@ -5,18 +5,21 @@ import com.stripe.exception.{CardException, InvalidRequestException, StripeExcep
 import com.stripe.model.{Charge, Token}
 import com.stripe.net.RequestOptions
 import com.stripe.net.RequestOptions.RequestOptionsBuilder
+import com.wix.pay._
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.model._
 import com.wix.pay.stripe.model.Fields
-import com.wix.pay._
 
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchantParser,
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
                     additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
+                    metadataHelper: ChargeMetadataHelper = new ChargeMetadataHelper,
+                    useAlternativeMetadata: Boolean = false,
                     sendReceipts: Boolean = false,
                     connectTimeout: Option[Duration] = None,
                     readTimeout: Option[Duration] = None) extends PaymentGateway {
@@ -24,12 +27,17 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
 
+    val metadata = if (useAlternativeMetadata)
+      metadataHelper.getMetadata(creditCard, customer, deal).asJava
+    else
+      additionalInfoMapper.createMap(creditCard, customer, deal)
+
     val baseParams = Map(
       Fields.amount -> StripeAmountConversionHelper.convert(currencyAmount.amount, currencyAmount.currency),
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
-      Fields.metadata -> additionalInfoMapper.createMap(creditCard, customer, deal),
+      Fields.metadata -> metadata,
       Fields.ip -> customer.map(_.ipAddress).orNull,
       Fields.userAgent -> customer.map(_.userAgent).orNull,
       Fields.referrer -> customer.map(_.referrer).orNull,
@@ -37,11 +45,11 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.externalId -> customer.map(_.id).orNull
     )
 
-    val receiptParams = if (sendReceipts) {
-      customer.flatMap { _.email.map { Fields.receiptEmail -> _ } }.toMap
-    } else {
-      Map.empty
-    }
+    val receiptParams = for {
+      c ← customer
+      email ← c.email
+      if sendReceipts
+    } yield Fields.receiptEmail → email
 
     val params = baseParams ++ receiptParams
     Charge.create(params, requestOptionsFor(apiKey))
