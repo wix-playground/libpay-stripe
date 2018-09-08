@@ -1,24 +1,24 @@
 package com.wix.pay.stripe.it
 
+import java.net.{SocketTimeoutException, URLDecoder}
+import java.nio.charset.StandardCharsets
 
-import java.net.SocketTimeoutException
-
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, StatusCodes}
 import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, YearMonth}
 import com.wix.pay.model.{CurrencyAmount, Payment}
 import com.wix.pay.stripe._
+import com.wix.pay.stripe.model.Fields
 import com.wix.pay.stripe.testkit.StripeITEnvironment.StripePort
 import com.wix.pay.stripe.testkit.{StripeDriver, StripeError}
-import com.wix.pay.{AccountException, PaymentErrorException, PaymentRejectedException}
 import com.wix.pay.testkit.LibPayTestSupport._
-import org.specs2.matcher.ValueCheck
+import com.wix.pay.{AccountException, PaymentErrorException, PaymentRejectedException}
+import org.specs2.matcher.{Matcher, Matchers, ValueCheck}
 import org.specs2.mutable.SpecWithJUnit
 import org.specs2.specification.Scope
 
 import scala.concurrent.duration._
 
-
-class StripeGatewayIT extends SpecWithJUnit {
+class StripeGatewayIT extends SpecWithJUnit with Matchers {
 
   val driver: StripeDriver = new StripeDriver(port = StripePort)
 
@@ -67,6 +67,25 @@ class StripeGatewayIT extends SpecWithJUnit {
           }
         })
     }
+
+    def containsFields(pairs: (String, Matcher[String])*): Matcher[HttpRequest] = {
+      havePairs(pairs:_*) ^^ getRequestFields _
+    }
+
+    private def getRequestFields(req: HttpRequest): Map[String, String] = {
+      val str = new String(req.entity.asInstanceOf[HttpEntity.Strict].data.toArray)
+      URLDecoder.decode(str, StandardCharsets.UTF_8.name()).split("&").map { p =>
+        val pair = p.split("=")
+        (pair(0), pair(1))
+      }.toMap
+    }
+
+    def havePairs(pairs: (String, Matcher[String])*): Matcher[Map[String, String]] = pairs.map {
+      case (k, v) ⇒ havePair(k, v)
+    }.reduce(_ and _)
+
+    def havePair(key: String, valueThat: Matcher[String]): Matcher[Map[String, String]] =
+      haveKey(key) and valueThat ^^ ((_: Map[String, String])(key))
   }
 
 
@@ -154,6 +173,14 @@ class StripeGatewayIT extends SpecWithJUnit {
         creditCard = someCreditCard,
         payment = somePayment,
         customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
+
+      driver.lastRequest() must containsFields(
+        Fields.ip -> beEqualTo(someCustomer.ipAddress.get),
+        Fields.userAgent -> beEqualTo(someCustomer.userAgent.get),
+        Fields.referrer -> beEqualTo(someCustomer.referrer.get),
+        Fields.deviceId -> beEqualTo(someCustomer.deviceId.get),
+        Fields.externalId -> beEqualTo(someCustomer.id.get)
+      )
     }
 
     "fail on Invalid API Key" in new Ctx {

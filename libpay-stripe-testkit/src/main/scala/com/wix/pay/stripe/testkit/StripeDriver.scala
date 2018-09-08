@@ -23,11 +23,11 @@ class StripeDriver(server: StubWebServer) {
   def stop(): Unit = server.stop()
   def reset(): Unit = server.replaceWith()
 
+  def lastRequest(): HttpRequest = server.recordedRequests.last
 
   def aCreateCardTokenToken: CreateCardTokenCtx = new CreateCardTokenCtx()
   def aRetrieveAccountFor: RetrieveAccountCtx = new RetrieveAccountCtx()
   def aCreateChargeRequest: CreateChargeCtx = new CreateChargeCtx()
-
 
   abstract class Ctx(val resource: String) {
     def failOnAmountBelowMinimum(): Unit = {
