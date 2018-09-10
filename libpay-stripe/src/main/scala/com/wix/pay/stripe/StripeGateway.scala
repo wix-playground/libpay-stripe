@@ -37,12 +37,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       Fields.currency -> currencyAmount.currency,
       Fields.source -> token.getId,
       Fields.capture -> autoCapture.asInstanceOf[java.lang.Boolean],
-      Fields.metadata -> metadata,
-      Fields.ip -> customer.flatMap(_.ipAddress).orNull,
-      Fields.userAgent -> customer.flatMap(_.userAgent).orNull,
-      Fields.referrer -> customer.flatMap(_.referrer).orNull,
-      Fields.deviceId -> customer.flatMap(_.deviceId).orNull,
-      Fields.externalId -> customer.flatMap(_.id).orNull
+      Fields.metadata -> metadata
     )
 
     val receiptParams = for {

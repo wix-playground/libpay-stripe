@@ -173,14 +173,6 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
         creditCard = someCreditCard,
         payment = somePayment,
         customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
-
-      driver.lastRequest() must containsFields(
-        Fields.ip -> beEqualTo(someCustomer.ipAddress.get),
-        Fields.userAgent -> beEqualTo(someCustomer.userAgent.get),
-        Fields.referrer -> beEqualTo(someCustomer.referrer.get),
-        Fields.deviceId -> beEqualTo(someCustomer.deviceId.get),
-        Fields.externalId -> beEqualTo(someCustomer.id.get)
-      )
     }
 
     "fail on Invalid API Key" in new Ctx {
