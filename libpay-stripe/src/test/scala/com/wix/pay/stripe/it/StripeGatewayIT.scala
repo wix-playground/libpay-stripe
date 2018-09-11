@@ -69,11 +69,11 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
         })
     }
 
-    def containsFields(pairs: (String, Matcher[String])*): Matcher[HttpRequest] = {
+    def containFields(pairs: (String, Matcher[String])*): Matcher[HttpRequest] = {
       havePairs(pairs:_*) ^^ getRequestFields _
     }
 
-    def notContainsFields(fields: String*): Matcher[HttpRequest] = {
+    def notContainFields(fields: String*): Matcher[HttpRequest] = {
       fields.map(haveKey(_).not).reduce(_ and _) ^^ getRequestFields _
     }
 
@@ -180,7 +180,7 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
         payment = somePayment,
         customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
 
-      driver.lastRequest() must containsFields(
+      driver.lastRequest() must containFields(
         Fields.ip -> beEqualTo(someCustomer.ipAddress.get),
         Fields.userAgent -> beEqualTo(someCustomer.userAgent.get),
         Fields.referrer -> beEqualTo(someCustomer.referrer.get),
@@ -200,13 +200,13 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
         payment = somePayment,
         customer = Some(someCustomer.copy(id = Some(""), deviceId = None))) must beASuccessfulTry(check = ===(someChargeId))
 
-      driver.lastRequest() must containsFields(
+      driver.lastRequest() must containFields(
         Fields.ip -> beEqualTo(someCustomer.ipAddress.get),
         Fields.userAgent -> beEqualTo(someCustomer.userAgent.get),
         Fields.referrer -> beEqualTo(someCustomer.referrer.get)
       )
 
-      driver.lastRequest() must notContainsFields(
+      driver.lastRequest() must notContainFields(
         Fields.deviceId,
         Fields.externalId
       )
@@ -223,7 +223,7 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
         payment = somePayment,
         customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
 
-      driver.lastRequest() must notContainsFields(
+      driver.lastRequest() must notContainFields(
         Fields.ip,
         Fields.userAgent,
         Fields.referrer,

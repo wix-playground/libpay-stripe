@@ -54,7 +54,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
         Fields.referrer -> customer.flatMap(_.referrer).orNull,
         Fields.deviceId -> customer.flatMap(_.deviceId).orNull,
         Fields.externalId -> customer.flatMap(_.id).orNull
-      ).filter(t => t._2 != null && !t._2.isEmpty)
+      ).filter(t => t._2 != null && t._2.nonEmpty)
     } else Nil
 
     val params = baseParams ++ receiptParams ++ fraudParams
