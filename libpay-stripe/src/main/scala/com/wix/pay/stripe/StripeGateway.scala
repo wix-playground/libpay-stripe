@@ -49,13 +49,13 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
     val fraudParams = if (FeatureRegistry.isEnabled("StripeSendFraudDetectionInfo")) {
       Map(
-        Fields.ip -> customer.flatMap(_.ipAddress).orNull,
-        Fields.userAgent -> customer.flatMap(_.userAgent).orNull,
-        Fields.referrer -> customer.flatMap(_.referrer).orNull,
-        Fields.deviceId -> customer.flatMap(_.deviceId).orNull,
-        Fields.externalId -> customer.flatMap(_.id).orNull
-      ).filter(t => t._2 != null && t._2.nonEmpty)
-    } else Nil
+        Fields.ip -> customer.flatMap(_.ipAddress),
+        Fields.userAgent -> customer.flatMap(_.userAgent),
+        Fields.referrer -> customer.flatMap(_.referrer),
+        Fields.deviceId -> customer.flatMap(_.deviceId),
+        Fields.externalId -> customer.flatMap(_.id)
+      ).collect { case (k, Some(v)) if v.nonEmpty =>  (k, v) }
+    } else Map.empty
 
     val params = baseParams ++ receiptParams ++ fraudParams
     Charge.create(params, requestOptionsFor(apiKey))
