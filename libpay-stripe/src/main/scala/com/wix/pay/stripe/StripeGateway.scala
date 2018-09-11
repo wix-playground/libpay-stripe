@@ -7,6 +7,7 @@ import com.stripe.net.RequestOptions
 import com.stripe.net.RequestOptions.RequestOptionsBuilder
 import com.wix.pay._
 import com.wix.pay.creditcard.CreditCard
+import com.wix.pay.feature.FeatureRegistry
 import com.wix.pay.model._
 import com.wix.pay.stripe.model.Fields
 
@@ -46,7 +47,17 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       if sendReceipts
     } yield Fields.receiptEmail → email
 
-    val params = baseParams ++ receiptParams
+    val fraudParams = if (FeatureRegistry.isEnabled("StripeSendFraudDetectionInfo")) {
+      Map(
+        Fields.ip -> customer.flatMap(_.ipAddress).orNull,
+        Fields.userAgent -> customer.flatMap(_.userAgent).orNull,
+        Fields.referrer -> customer.flatMap(_.referrer).orNull,
+        Fields.deviceId -> customer.flatMap(_.deviceId).orNull,
+        Fields.externalId -> customer.flatMap(_.id).orNull
+      ).filter(t => t._2 != null && !t._2.isEmpty)
+    } else Nil
+
+    val params = baseParams ++ receiptParams ++ fraudParams
     Charge.create(params, requestOptionsFor(apiKey))
   }
 

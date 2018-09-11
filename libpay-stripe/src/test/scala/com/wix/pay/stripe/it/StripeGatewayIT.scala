@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, StatusCodes}
 import com.wix.pay.creditcard.{CreditCard, CreditCardOptionalFields, YearMonth}
+import com.wix.pay.feature.FeatureRegistry
 import com.wix.pay.model.{CurrencyAmount, Payment}
 import com.wix.pay.stripe._
 import com.wix.pay.stripe.model.Fields
@@ -70,6 +71,10 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
 
     def containsFields(pairs: (String, Matcher[String])*): Matcher[HttpRequest] = {
       havePairs(pairs:_*) ^^ getRequestFields _
+    }
+
+    def notContainsFields(fields: String*): Matcher[HttpRequest] = {
+      fields.map(haveKey(_).not).reduce(_ and _) ^^ getRequestFields _
     }
 
     private def getRequestFields(req: HttpRequest): Map[String, String] = {
@@ -167,12 +172,64 @@ class StripeGatewayIT extends SpecWithJUnit with Matchers {
     "successfully execute with not empty customer" in new Ctx {
       driver.aCreateChargeRequest returns someChargeId
       driver.aCreateCardTokenToken returns someCardToken
+      FeatureRegistry.register("StripeSendFraudDetectionInfo", () => true)
 
       stripe.sale(
         merchantKey = someMerchantKey,
         creditCard = someCreditCard,
         payment = somePayment,
         customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
+
+      driver.lastRequest() must containsFields(
+        Fields.ip -> beEqualTo(someCustomer.ipAddress.get),
+        Fields.userAgent -> beEqualTo(someCustomer.userAgent.get),
+        Fields.referrer -> beEqualTo(someCustomer.referrer.get),
+        Fields.deviceId -> beEqualTo(someCustomer.deviceId.get),
+        Fields.externalId -> beEqualTo(someCustomer.id.get)
+      )
+    }
+
+    "successfully execute with customer with empty fields" in new Ctx {
+      driver.aCreateChargeRequest returns someChargeId
+      driver.aCreateCardTokenToken returns someCardToken
+      FeatureRegistry.register("StripeSendFraudDetectionInfo", () => true)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment,
+        customer = Some(someCustomer.copy(id = Some(""), deviceId = None))) must beASuccessfulTry(check = ===(someChargeId))
+
+      driver.lastRequest() must containsFields(
+        Fields.ip -> beEqualTo(someCustomer.ipAddress.get),
+        Fields.userAgent -> beEqualTo(someCustomer.userAgent.get),
+        Fields.referrer -> beEqualTo(someCustomer.referrer.get)
+      )
+
+      driver.lastRequest() must notContainsFields(
+        Fields.deviceId,
+        Fields.externalId
+      )
+    }
+
+    "successfully execute with customer with disabled feature" in new Ctx {
+      driver.aCreateChargeRequest returns someChargeId
+      driver.aCreateCardTokenToken returns someCardToken
+      FeatureRegistry.register("StripeSendFraudDetectionInfo", () => false)
+
+      stripe.sale(
+        merchantKey = someMerchantKey,
+        creditCard = someCreditCard,
+        payment = somePayment,
+        customer = Some(someCustomer)) must beASuccessfulTry(check = ===(someChargeId))
+
+      driver.lastRequest() must notContainsFields(
+        Fields.ip,
+        Fields.userAgent,
+        Fields.referrer,
+        Fields.deviceId,
+        Fields.externalId
+      )
     }
 
     "fail on Invalid API Key" in new Ctx {
