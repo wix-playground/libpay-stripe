@@ -9,6 +9,7 @@ import com.wix.pay._
 import com.wix.pay.creditcard.CreditCard
 import com.wix.pay.feature.FeatureRegistry
 import com.wix.pay.model._
+import com.wix.pay.stripe.StripeGateway._
 import com.wix.pay.stripe.model.Fields
 
 import scala.collection.JavaConversions._
@@ -20,7 +21,6 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
                     authorizationParser: StripeAuthorizationParser = new JsonStripeAuthorizationParser,
                     additionalInfoMapper: StripeAdditionalInfoMapper = new StripeAdditionalInfoMapper,
                     metadataHelper: ChargeMetadataHelper = new ChargeMetadataHelper,
-                    useAlternativeMetadata: Boolean = false,
                     sendReceipts: Boolean = false,
                     connectTimeout: Option[Duration] = None,
                     readTimeout: Option[Duration] = None) extends PaymentGateway {
@@ -28,7 +28,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
   private def createCharge(apiKey: String, creditCard: CreditCard, currencyAmount: CurrencyAmount, customer: Option[Customer], deal: Option[Deal], autoCapture: Boolean): Charge = {
     val token = retrieveCardToken(apiKey, creditCard)
 
-    val metadata = if (useAlternativeMetadata)
+    val metadata = if (FeatureRegistry.isEnabled(StripeSendAlternativeMetadata))
       metadataHelper.getMetadata(creditCard, customer, deal).asJava
     else
       additionalInfoMapper.createMap(creditCard, customer, deal)
@@ -47,7 +47,7 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
       if sendReceipts
     } yield Fields.receiptEmail → email
 
-    val fraudParams = if (FeatureRegistry.isEnabled("StripeSendFraudDetectionInfo")) {
+    val fraudParams = if (FeatureRegistry.isEnabled(StripeSendFraudDetectionInfo)) {
       Map(
         Fields.ip -> customer.flatMap(_.ipAddress),
         Fields.userAgent -> customer.flatMap(_.userAgent),
@@ -202,6 +202,11 @@ class StripeGateway(merchantParser: StripeMerchantParser = new JsonStripeMerchan
 
     merchant
   }
+}
+
+object StripeGateway {
+  final val StripeSendAlternativeMetadata = "StripeSendAlternativeMetadata"
+  final val StripeSendFraudDetectionInfo = "StripeSendFraudDetectionInfo"
 }
 
 /** @see <a href="https://support.stripe.com/questions/what-is-the-minimum-amount-i-can-charge-with-stripe">What is the minimum amount I can charge with Stripe?</a> */
