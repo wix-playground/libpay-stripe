@@ -38,13 +38,17 @@ class ChargeMetadataHelper {
     val itemsInfo = for {
       deal ← maybeDeal.toSeq
       item ← deal.orderItems
-      itemId ← item.id.toSeq
-    } yield itemId → orderItemInfo(item)
-    ListMap(itemsInfo:_*)
+    } yield orderItemInfo(item)
+
+    val itemsInfoPairs = itemsInfo.zipWithIndex.map { case (itemInfo, index) ⇒
+      (s"Order Item #${index + 1}", itemInfo)
+    }
+
+    ListMap(itemsInfoPairs:_*)
   }
 
   private def orderItemInfo(orderItem: OrderItem) = {
-    val itemInfo = Seq(orderItem.name, orderItem.quantity, orderItem.pricePerItem).flatten.mkString(", ")
+    val itemInfo = Seq(orderItem.id, orderItem.name, orderItem.quantity, orderItem.pricePerItem).flatten.mkString(", ")
     Some(itemInfo).filter(_.nonEmpty)
   }
 
