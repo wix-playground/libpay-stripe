@@ -19,8 +19,8 @@ class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
         "Customer IP",
         "Invoice Id",
         "Shipping Address",
-        "orderItemId",
-        "orderItemId2",
+        "Order Item #1",
+        "Order Item #2",
         "Included Charges: Tax",
         "Included Charges: Shipping"
       )
@@ -36,8 +36,8 @@ class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
         "Customer Email",
         "Invoice Id",
         "Shipping Address",
-        "orderItemId",
-        "orderItemId2",
+        "Order Item #1",
+        "Order Item #2",
         "Included Charges: Tax",
         "Included Charges: Shipping"
       )
@@ -53,8 +53,8 @@ class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
         "Customer Email",
         "Invoice Id",
         "Shipping Address",
-        "orderItemId",
-        "orderItemId2",
+        "Order Item #1",
+        "Order Item #2",
         "Included Charges: Tax",
         "Included Charges: Shipping"
       )
@@ -80,17 +80,17 @@ class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
         "Customer IP",
         "Invoice Id",
         "Shipping Address",
-        "OrderItemId #1",
-        "OrderItemId #2",
-        "OrderItemId #3",
-        "OrderItemId #4",
-        "OrderItemId #5",
-        "OrderItemId #6",
-        "OrderItemId #7",
-        "OrderItemId #8",
-        "OrderItemId #9",
-        "OrderItemId #10",
-        "OrderItemId #11",
+        "Order Item #1",
+        "Order Item #2",
+        "Order Item #3",
+        "Order Item #4",
+        "Order Item #5",
+        "Order Item #6",
+        "Order Item #7",
+        "Order Item #8",
+        "Order Item #9",
+        "Order Item #10",
+        "Order Item #11",
         "Included Charges: Tax",
         "Included Charges: Shipping"
       )
@@ -110,8 +110,8 @@ class ChargeMetadataHelperTest extends SpecWithJUnit with Matchers {
         ("Customer IP", be_==(customer.ipAddress.get)),
         ("Invoice Id", be_==(someDeal.get.invoiceId.get)),
         ("Shipping Address", contains(sAddress.street, sAddress.city, sAddress.postalCode, sAddress.state, sAddress.countryCode.map(_.getCountry))),
-        ("orderItemId", contains(orderItems.head.name, orderItems.head.pricePerItem.map(_.toString), orderItems.head.quantity.map(_.toString))),
-        ("orderItemId2", contains(orderItems(1).name, orderItems(1).pricePerItem.map(_.toString), orderItems(1).quantity.map(_.toString))),
+        ("Order Item #1", contains(orderItems.head.id, orderItems.head.name, orderItems.head.pricePerItem.map(_.toString), orderItems.head.quantity.map(_.toString))),
+        ("Order Item #2", contains(orderItems(1).id, orderItems(1).name, orderItems(1).pricePerItem.map(_.toString), orderItems(1).quantity.map(_.toString))),
         ("Included Charges: Tax", be_==(charges.tax.get.toString)),
         ("Included Charges: Shipping", be_==(charges.shipping.get.toString))
       )
